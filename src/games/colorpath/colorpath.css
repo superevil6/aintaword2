@@ -1,0 +1,261 @@
+/* Color Path — game styles.  All selectors scoped under .cp */
+
+/* ── Root shell ──────────────────────────────────────────────────────────── */
+
+.cp {
+  width: 100%;
+  max-width: 560px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 2.5vw, 24px);
+}
+
+/* ── HUD ─────────────────────────────────────────────────────────────────── */
+
+.cp-hud {
+  display: flex;
+  align-items: baseline;
+  gap: 2rem;
+}
+
+.cp-hud-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.cp-moves,
+.cp-collected {
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--fg);
+}
+
+.cp-hud-label {
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Grid wrapper (circles + SVG overlay) ────────────────────────────────── */
+
+.cp-grid-wrapper {
+  position: relative;
+  width: 100%;
+  /* keep square */
+  aspect-ratio: 1;
+  max-height: 55vh;
+  max-width:  55vh;
+}
+
+.cp-arrows {
+  position: absolute;
+  inset: 0;
+  width:  100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ── Circle grid ─────────────────────────────────────────────────────────── */
+
+.cp-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cp-size), 1fr);
+  grid-template-rows:    repeat(var(--cp-size), 1fr);
+  gap: clamp(4px, 1.5vw, 12px);
+  padding: clamp(4px, 1.5vw, 12px);
+}
+
+.cp-cell {
+  border-radius: 50%;
+  background: var(--cell-color, #888);
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.1s, box-shadow 0.12s;
+  /* make it square so border-radius: 50% gives a circle */
+  aspect-ratio: 1;
+  padding: 0;
+}
+
+.cp-cell:hover {
+  filter: brightness(1.15);
+}
+
+/* Start cell */
+.cp-cell--start {
+  border-color: rgba(255,255,255,0.5);
+}
+
+/* Currently occupied cell */
+.cp-cell--current {
+  border-color: white;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+  transform: scale(1.08);
+}
+
+/* Burned (visited, not current) — dimmed so player can see their trail */
+.cp-cell--burned {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Target circle — must be collected */
+.cp-cell--target {
+  border-color: white;
+  box-shadow: 0 0 10px 3px rgba(255,255,255,0.35);
+  animation: cp-target-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes cp-target-pulse {
+  from { box-shadow: 0 0 6px 2px rgba(255,255,255,0.2); }
+  to   { box-shadow: 0 0 14px 4px rgba(255,255,255,0.6); }
+}
+
+/* Collected target — pulse replaced by a steady dim glow */
+.cp-cell--collected {
+  opacity: 0.45;
+  border-color: var(--good);
+  box-shadow: 0 0 8px 2px color-mix(in srgb, var(--good) 50%, transparent);
+  animation: none;
+}
+
+/* Obstacle — impassable cell */
+.cp-cell--obstacle {
+  background: #1a1a1a !important;
+  border-color: #333;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cp-cell--obstacle:hover {
+  filter: none;
+}
+
+/* Pending: multiple targets highlighted awaiting player tap */
+.cp-cell--pending {
+  border-color: white;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
+  transform: scale(1.08);
+  cursor: pointer;
+  animation: cp-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes cp-pulse {
+  from { box-shadow: 0 0 0 3px rgba(255,255,255,0.3); }
+  to   { box-shadow: 0 0 0 5px rgba(255,255,255,0.7); }
+}
+
+/* ── Action buttons (undo / reset) ──────────────────────────────────────── */
+
+.cp-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cp-action-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cp-action-btn:not(:disabled):hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--fg);
+}
+
+.cp-action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Primary color buttons ───────────────────────────────────────────────── */
+
+.cp-controls {
+  display: flex;
+  gap: clamp(10px, 3vw, 20px);
+}
+
+.cp-primary {
+  position: relative;
+  width:  clamp(68px, 18vw, 96px);
+  height: clamp(68px, 18vw, 96px);
+  border-radius: 50%;
+  border: 3px solid var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 18%, var(--bg-2));
+  color: white;
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.15s;
+  --result-color: transparent;
+}
+
+.cp-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--primary-color) 32%, var(--bg-2));
+  transform: translateY(-2px);
+}
+
+.cp-primary:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Win screen ──────────────────────────────────────────────────────────── */
+
+.cp-win {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  z-index: 20;
+}
+
+.cp-win-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.cp-win-label {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--good);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cp-win-moves {
+  margin: 0;
+  font-size: clamp(3rem, 14vw, 5.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--fg);
+  line-height: 1;
+}
+
+.cp-win-moves-label {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--fg-dim);
+}

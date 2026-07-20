@@ -25,7 +25,11 @@ body {
 }
 
 body {
-  background: radial-gradient(120% 120% at 50% 0%, var(--bg-2), var(--bg) 60%);
+  background: radial-gradient(
+    120% 120% at 50% 0%,
+    color-mix(in srgb, var(--cp-player-color, var(--bg-2)) 22%, var(--bg-2)),
+    color-mix(in srgb, var(--cp-player-color, var(--bg))   8%,  var(--bg)) 60%
+  );
   color: var(--fg);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -63,4 +67,36 @@ body {
 
 button {
   font-family: inherit;
+}
+
+/* ── Back navigation (hub → game) ───────────────────────────────────────── */
+
+.back-bar {
+  width: 100%;
+  max-width: 640px;
+  padding-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  transition: color 0.15s;
+}
+
+.back-btn:hover {
+  color: var(--fg);
+}
+
+.game-container {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
 }

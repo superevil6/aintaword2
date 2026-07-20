@@ -1,0 +1,17 @@
+{
+  // Disable and hide VS Code's built-in AI features (Copilot chat, inline
+  // suggestions, next-edit suggestions) for this workspace. Copilot is bundled
+  // into VS Code itself, so there is no extension to uninstall -- this is the
+  // switch that actually turns it off.
+  "chat.disableAIFeatures": true,
+
+  // Extension-level toggles, kept as a backstop in case the above is renamed
+  // or unsupported on an older VS Code build.
+  "github.copilot.enable": {
+    "*": false
+  },
+  "github.copilot.nextEditSuggestions.enabled": false,
+
+  // Stops any provider from rendering ghost-text completions in this project.
+  "editor.inlineSuggest.enabled": false
+}

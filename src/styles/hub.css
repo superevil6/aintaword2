@@ -1,0 +1,108 @@
+/* Hub / game-select screen styles. */
+
+.hub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+  max-width: 640px;
+  padding: 1rem 0;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.hub-header {
+  text-align: center;
+}
+
+.hub-title {
+  margin: 0 0 0.35em;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+.hub-subtitle {
+  margin: 0;
+  color: var(--fg-dim);
+  font-size: 1rem;
+}
+
+/* ── Card grid ───────────────────────────────────────────────────────────── */
+
+.hub-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  width: 100%;
+}
+
+.hub-card {
+  /* layout */
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0.2rem 1rem;
+  width: 100%;
+  padding: 1.1rem 1.4rem;
+  text-align: left;
+
+  /* appearance */
+  background: var(--bg-2);
+  border: 1.5px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+  border-radius: var(--radius);
+  color: var(--fg);
+  cursor: pointer;
+
+  /* transition */
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+
+.hub-card:hover {
+  border-color: var(--card-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--card-accent) 20%, transparent);
+}
+
+.hub-card:active {
+  transform: translateY(0);
+}
+
+.hub-card-title {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--card-accent);
+  letter-spacing: -0.01em;
+}
+
+.hub-card-tagline {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: 0.9rem;
+  color: var(--fg-dim);
+  line-height: 1.4;
+}
+
+.hub-card-play {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--card-accent);
+  opacity: 0.7;
+  transition: opacity 0.15s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.hub-card:hover .hub-card-play {
+  opacity: 1;
+  transform: translateX(3px);
+}

@@ -38,6 +38,21 @@
       }
     },
     {
+      // ► Brave browser — same Chrome DevTools protocol, no Google required.
+      "name": "▶ Play in Brave",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173/",
+      "webRoot": "${workspaceFolder}",
+      "runtimeExecutable": "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+      "preLaunchTask": "vite: dev server",
+      "sourceMapPathOverrides": {
+        "/src/*": "${workspaceFolder}/src/*",
+        "/@fs/*": "/*",
+        "webpack:///./src/*": "${workspaceFolder}/src/*"
+      }
+    },
+    {
       // ► Same as above for Edge, if that's what's installed.
       "name": "▶ Play in Edge",
       "type": "msedge",
