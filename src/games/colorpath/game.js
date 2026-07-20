@@ -18,6 +18,7 @@ import {
   recordBest,
 } from "./results.js";
 import { buildShareText, copyToClipboard } from "./share.js";
+import { mountTutorial } from "./tutorial.js";
 import { Rng } from "../../core/rng.js";
 
 export class ColorPathGame {
@@ -45,6 +46,7 @@ export class ColorPathGame {
     this._startTime = null;  // Timestamp when game started
     this._pausedAt = null;   // Timestamp the clock was frozen, if paused
     this._closeModal = null; // Closer for the open dialog, if any
+    this._tutorialCleanup = null; // Stops the picker demo loop
     this._timerInterval = null;  // Timer update interval ID
     this._timerEl = null;  // Timer display element
     this._gameActive = false;  // Whether the game is currently in progress
@@ -62,6 +64,7 @@ export class ColorPathGame {
 
   destroy() {
     this._closeModal?.(false); // detaches its keydown listener
+    this._teardownTutorial();  // stops the picker demo's looping timer
     this._stopTimer();
     clearTimeout(this._shareTimer);
     window.removeEventListener("resize", this._onResize);
@@ -84,6 +87,12 @@ export class ColorPathGame {
     this._build();
   }
 
+  /** Stop the picker demo's loop; safe to call when it isn't mounted. */
+  _teardownTutorial() {
+    this._tutorialCleanup?.();
+    this._tutorialCleanup = null;
+  }
+
   _applyProfile(difficultyId) {
     this.profile     = getDifficulty(difficultyId);
     this.size        = this.profile.size;
@@ -94,6 +103,7 @@ export class ColorPathGame {
 
   _showSelect() {
     this._closeModal?.(false);
+    this._teardownTutorial();
     this._stopTimer();
     this._pending = [];
     this._preview = [];
@@ -105,13 +115,20 @@ export class ColorPathGame {
     card.innerHTML = `
       <h1 class="cp-card-title">Color Path</h1>
       <p class="cp-card-lede">Every circle is red, yellow and blue mixed together. White is none of them.</p>
-      <ul class="cp-rules">
-        <li>Tap a primary to <strong>add</strong> it (+) or <strong>remove</strong> it (&minus;), then step to a neighbouring circle of your new colour.</li>
-        <li>Hover or focus a primary to see where it would take you.</li>
-        <li>Circles burn out behind you. Tap one you have already visited to backtrack &mdash; your move count stays.</li>
-        <li>Collect <strong>every glowing circle</strong> to finish.</li>
-      </ul>
     `;
+
+    // The demo covers add/remove/step and the trail recolouring, so the written
+    // rules only need to carry what it cannot show.
+    this._tutorialCleanup = mountTutorial(card);
+
+    const rules = document.createElement("ul");
+    rules.className = "cp-rules";
+    rules.innerHTML = `
+      <li>Hover or focus a primary to see where it would take you.</li>
+      <li>Circles burn out behind you. Tap one you have already visited to backtrack &mdash; your move count stays.</li>
+      <li>Collect <strong>every glowing circle</strong> to finish.</li>
+    `;
+    card.appendChild(rules);
 
     const list = document.createElement("div");
     list.className = "cp-picker";
@@ -172,6 +189,7 @@ export class ColorPathGame {
     // A rebuild is a fresh puzzle: drop any running clock and its start stamp,
     // or "New puzzle" inherits the previous run's elapsed time.
     this._closeModal?.(false);
+    this._teardownTutorial();
     this._stopTimer();
     this._startTime = null;
     this._pending = [];
@@ -446,6 +464,7 @@ export class ColorPathGame {
   /** The result for a tier already solved today, reached from the picker. */
   _showStoredResult(id, result) {
     this._applyProfile(id);
+    this._teardownTutorial();
     this._stopTimer();
     this._pending = [];
     this.root.innerHTML = "";
