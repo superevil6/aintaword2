@@ -1,6 +1,6 @@
 import "./colorpath.css";
 import { Grid } from "./grid.js";
-import { generateGrid, VALID_TARGETS } from "./generator.js";
+import { generateGrid } from "./generator.js";
 import { COLOR_HEX, COLOR_NAMES, PRIMARIES, primaryAdds } from "./colors.js";
 import { Rng } from "../../core/rng.js";
 
@@ -8,12 +8,14 @@ export class ColorPathGame {
   /**
    * @param {HTMLElement} container
    * @param {object}      opts
-   * @param {number}      opts.size       - Grid side length
-   * @param {string}      opts.seed       - Seed string for deterministic generation
+   * @param {number}      opts.size        - Grid side length
+   * @param {number}      opts.targetCount - How many circles must be collected
+   * @param {string}      opts.seed        - Seed string for deterministic generation
    */
   constructor(container, opts = {}) {
     this.root = container;
     this.size = opts.size ?? 7;
+    this.targetCount = opts.targetCount ?? 3;
     this.seed = opts.seed ?? String(Date.now());
 
     this.grid = null;
@@ -41,8 +43,7 @@ export class ColorPathGame {
 
   _build() {
     const rng    = new Rng(this.seed);
-    const target = VALID_TARGETS[rng.int(0, VALID_TARGETS.length - 1)];
-    const { colors, targets, obstacles } = generateGrid(this.size, target, rng);
+    const { colors, targets, obstacles } = generateGrid(this.size, this.targetCount, rng);
     this.grid    = new Grid(this.size, colors, targets, obstacles);
 
     this.root.innerHTML = "";

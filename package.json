@@ -10,9 +10,10 @@
     "words": "node scripts/build-words.mjs",
     "daily": "node scripts/build-daily.mjs",
     "verify": "node scripts/verify.mjs",
+    "verify:colorpath": "node scripts/verify-colorpath.mjs",
     "e2e": "node scripts/e2e.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "test": "npm run verify && npm run e2e"
+    "test": "npm run verify && npm run verify:colorpath && npm run e2e"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

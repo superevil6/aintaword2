@@ -5,12 +5,7 @@
 
 import { registerGame } from "../../core/registry.js";
 import { ColorPathGame } from "./game.js";
-
-const DIFFICULTIES = {
-  easy:   { size: 5, targetCount: 3 },
-  medium: { size: 7, targetCount: 4 },
-  hard:   { size: 9, targetCount: 5 },
-};
+import { DIFFICULTIES, DEFAULT_DIFFICULTY } from "./difficulty.js";
 
 export default registerGame({
   id:      "colorpath",
@@ -23,8 +18,8 @@ export default registerGame({
   accent: "#e07818",
 
   async mount(container, opts = {}) {
-    const diffKey  = opts.difficulty ?? "medium";
-    const diff     = DIFFICULTIES[diffKey] ?? DIFFICULTIES.medium;
+    const diffKey  = opts.difficulty ?? DEFAULT_DIFFICULTY;
+    const diff     = DIFFICULTIES[diffKey] ?? DIFFICULTIES[DEFAULT_DIFFICULTY];
     const today    = new Date().toISOString().slice(0, 10);
     const seed     = `colorpath:${today}:${diffKey}`;
 

@@ -1,21 +1,48 @@
 // Puzzle generator for Color Path.
 //
-// Produces a valid NxN grid of colors plus K scattered target cells.
+// Produces a valid NxN grid of colors, K target cells, and scattered obstacles.
 //
-// Color layout guarantees:
-//   1. grid[0] = WHITE (start)
-//   2. No two orthogonally adjacent cells share the same color
-//   3. At least one valid path exists from start through all targets
-//      (the color walk ensures connectivity; targets are chosen from
-//       reachable non-start cells)
+// Layout guarantees:
+//   1. grid[0] = WHITE (start, top-left)
+//   2. Every target lies on the solution path, so all are reachable
+//   3. No two orthogonally adjacent cells share the same color
+//   4. When targetCount >= 4, every quadrant holds at least one target;
+//      below that, targets are spread across as many quadrants as there are
+//      targets to place
 //
-// Returns { colors, targets } where targets is an array of cell indices
-// the player must visit to win.
+// Returns { colors, targets, obstacles } where targets is an array of cell
+// indices the player must visit to win.
 
 import { WHITE, COLOR_COUNT } from "./colors.js";
+
 const PRIMARY_BITS = [1, 2, 4];
 
-export const VALID_TARGETS = [3, 5, 6]; // ORANGE, PURPLE, GREEN (even parity)
+// Goal colors grouped by popcount parity. Every step of the color walk flips
+// exactly one primary bit, so a goal is only reachable in exactly L steps if
+// its popcount parity matches L. The path length varies per puzzle, so the
+// goal color has to be chosen after the path exists rather than before.
+const GOAL_COLORS_EVEN = [3, 5, 6]; // ORANGE, PURPLE, GREEN — two bits set
+const GOAL_COLORS_ODD  = [1, 2, 4]; // RED, YELLOW, BLUE     — one bit set
+
+// Retained under the old name for any caller still importing it.
+export const VALID_TARGETS = GOAL_COLORS_EVEN;
+
+// Fraction of the grid the solution path tries to cover. Higher means a longer
+// path and more room to place well-separated targets, but fewer free cells for
+// obstacles to occupy.
+const PATH_COVERAGE = 0.62;
+
+// Fraction of the off-path cells made impassable.
+const OBSTACLE_DENSITY = 0.12;
+
+// How many wandering paths to try before falling back to the perimeter loop.
+const PATH_ATTEMPTS = 40;
+
+// Quadrant coverage alone still lets two targets sit either side of a quadrant
+// boundary and end up adjacent. Building several candidate sets and keeping the
+// most spread-out one fixes that far more cheaply than trying to encode the
+// spacing as a hard constraint during selection.
+const TARGET_ATTEMPTS = 12;
 
 /**
  * @param {number} size        - Grid side length
@@ -24,58 +51,32 @@ export const VALID_TARGETS = [3, 5, 6]; // ORANGE, PURPLE, GREEN (even parity)
  * @returns {{ colors: number[], targets: number[], obstacles: number[] }}
  */
 export function generateGrid(size, targetCount, rng) {
-  const goalColor = VALID_TARGETS[rng.int(0, VALID_TARGETS.length - 1)];
-  const gridPath  = buildMinimalPath(size, rng);
-  const colorPath = buildColorWalk(WHITE, goalColor, gridPath.length - 1, rng);
+  const gridPath  = buildPath(size, targetCount, rng);
+  const steps     = gridPath.length - 1;
+  const goalPool  = steps % 2 === 0 ? GOAL_COLORS_EVEN : GOAL_COLORS_ODD;
+  const goalColor = rng.pick(goalPool);
+  const colorPath = buildColorWalk(WHITE, goalColor, steps, rng);
 
   const colors = new Array(size * size).fill(-1);
   for (let i = 0; i < gridPath.length; i++) {
     colors[gridPath[i]] = colorPath[i];
   }
 
-  // Ensure the first two moves are always primary colors (for path divergence).
-  // Colors at index 1 (right of start) and size (below start) must be RED, YELLOW, or BLUE.
-  const PRIMARY_COLORS = [1, 2, 4]; // RED, YELLOW, BLUE
-  const rightIdx = 1;
+  // The start has two orthogonal neighbours but the path only leaves through
+  // one of them. Force the other to a distinct primary so the opening move is
+  // a genuine choice of direction rather than a single forced option.
   const downIdx = size;
-
-  // Helper to find an available primary color for a cell
-  function pickPrimaryColor(idx) {
-    const used = new Set(
-      orthogonalNeighbors(idx, size).map(n => colors[n]).filter(c => c !== -1),
-    );
-    const available = PRIMARY_COLORS.filter(c => !used.has(c));
-    return available.length > 0 ? rng.pick(available) : PRIMARY_COLORS[0];
-  }
-
-  // Set right neighbor (if not already set by the path or if it's white)
-  if (colors[rightIdx] === -1 || colors[rightIdx] === WHITE) {
-    colors[rightIdx] = pickPrimaryColor(rightIdx);
-  }
-
-  // Set down neighbor (if not already set by the path or if it's white), prefer different from right
   if (colors[downIdx] === -1 || colors[downIdx] === WHITE) {
-    let chosen = pickPrimaryColor(downIdx);
-    // Try to diverge from the right neighbor for better variety
-    const alternatives = PRIMARY_COLORS.filter(c => c !== colors[rightIdx] && !new Set(
-      orthogonalNeighbors(downIdx, size).map(n => colors[n]).filter(c => c !== -1),
-    ).has(c));
-    if (alternatives.length > 0) {
-      chosen = rng.pick(alternatives);
-    }
-    colors[downIdx] = chosen;
+    const used = neighborColors(downIdx, size, colors);
+    const free = PRIMARY_BITS.filter(c => !used.has(c) && c !== colors[1]);
+    colors[downIdx] = free.length > 0 ? rng.pick(free) : PRIMARY_BITS[0];
   }
 
   // Greedy fill — avoid direct neighbors only.
-  // With 8 colors and at most 4 neighbors, there are always ≥ 4 safe choices.
-  // Ambiguity (two same-colored neighbors sharing a cell) can still arise due
-  // to repeated colors in the path walk; the UI handles that case gracefully
-  // by highlighting all valid targets and letting the player tap one.
+  // With 8 colors and at most 4 neighbors there are always >= 4 safe choices.
   for (let idx = 0; idx < size * size; idx++) {
     if (colors[idx] !== -1) continue;
-    const used = new Set(
-      orthogonalNeighbors(idx, size).map(n => colors[n]).filter(c => c !== -1),
-    );
+    const used = neighborColors(idx, size, colors);
     const available = [];
     for (let c = 0; c < COLOR_COUNT; c++) {
       if (!used.has(c)) available.push(c);
@@ -83,115 +84,205 @@ export function generateGrid(size, targetCount, rng) {
     colors[idx] = rng.pick(available);
   }
 
-  // Pick 3 targets - fixed to actual corner positions
-  const targets = [];
-  
-  // For a 7x7 grid:
-  // Top-right: index 6 (row 0, col 6)
-  // Bottom-left: index 42 (row 6, col 0)
-  // Bottom-right: index 48 (row 6, col 6)
-  
-  const topRightIdx = 6;
-  const bottomLeftIdx = (size - 1) * size; // First cell of last row
-  const bottomRightIdx = size * size - 1; // Last cell
-  
-  // Always add bottom-right
-  targets.push(bottomRightIdx);
-  
-  // Add top-right if on path, otherwise find closest in top-right area
-  if (gridPath.includes(topRightIdx)) {
-    targets.push(topRightIdx);
-  } else {
-    // Find the rightmost cell in the top half
-    let best = null;
-    for (const idx of gridPath) {
-      const row = Math.floor(idx / size);
-      if (row < Math.floor(size / 2)) {
-        if (best === null || (idx % size) > (best % size)) {
-          best = idx;
-        }
-      }
-    }
-    if (best !== null) targets.push(best);
-  }
-  
-  // Add bottom-left if on path, otherwise find closest in bottom-left area
-  if (gridPath.includes(bottomLeftIdx)) {
-    targets.push(bottomLeftIdx);
-  } else {
-    // Find the leftmost cell in the bottom half
-    let best = null;
-    for (const idx of gridPath) {
-      const row = Math.floor(idx / size);
-      if (row >= Math.floor(size / 2)) {
-        if (best === null || (idx % size) < (best % size)) {
-          best = idx;
-        }
-      }
-    }
-    if (best !== null && !targets.includes(best)) targets.push(best);
-  }
-  
-  // Ensure we have exactly 3
-  while (targets.length < 3) {
-    const candidate = gridPath[Math.floor(rng.float() * gridPath.length)];
-    if (!targets.includes(candidate)) {
-      targets.push(candidate);
-    }
-  }
-
-  // Create obstacles
-  const pathSet = new Set(gridPath);
-  const targetSet = new Set(targets);
-  const obstacles = [];
-  
-  // Simple wall across center row only
-  const centerRow = Math.floor(size / 2);
-  for (let col = 0; col < size; col++) {
-    const idx = centerRow * size + col;
-    // Leave 2-3 random openings (just pick 2-3 columns to keep clear)
-    if (Math.random() > 0.4 && !pathSet.has(idx) && !targetSet.has(idx)) {
-      obstacles.push(idx);
-    }
-  }
+  const targets   = pickTargets(gridPath, size, targetCount, rng);
+  const obstacles = scatterObstacles(size, gridPath, targets, rng);
 
   return { colors, targets, obstacles };
 }
 
-// ── Internal helpers ──────────────────────────────────────────────────────
+// ── Quadrants ─────────────────────────────────────────────────────────────
+
+/** 0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right. */
+export function quadrantOf(idx, size) {
+  const r = Math.floor(idx / size);
+  const c = idx % size;
+  return (r * 2 >= size ? 2 : 0) + (c * 2 >= size ? 1 : 0);
+}
+
+// ── Path construction ─────────────────────────────────────────────────────
 
 /**
- * Random right/down-only path from (0,0) to (N-1,N-1).
- * Produces exactly 2*(N-1) steps; no two non-consecutive cells are adjacent.
+ * A self-avoiding walk from the top-left start that reaches into every
+ * quadrant, so targets can be spread across the whole board.
+ *
+ * Retries until it finds a walk that is both long enough and touches all four
+ * quadrants; the perimeter loop is the fallback, since it trivially covers
+ * every quadrant and can always be built.
  */
-function buildMinimalPath(size, rng) {
-  // N-1 rights (0) and N-1 downs (1), Fisher-Yates shuffled
-  const steps = [];
-  for (let i = 0; i < size - 1; i++) {
-    steps.push(0); // right
-    steps.push(1); // down
+function buildPath(size, targetCount, rng) {
+  const maxLen = Math.max(
+    size * 2,
+    Math.round(size * size * PATH_COVERAGE),
+    targetCount + 1,
+  );
+  const minLen = Math.max(size * 2, targetCount + 1);
+
+  for (let attempt = 0; attempt < PATH_ATTEMPTS; attempt++) {
+    const path = randomWalk(size, rng, maxLen);
+    if (path.length < minLen) continue;
+    const quads = new Set(path.map(i => quadrantOf(i, size)));
+    if (quads.size === 4) return path;
   }
-  for (let i = steps.length - 1; i > 0; i--) {
-    const j = Math.floor(rng.float() * (i + 1));
-    [steps[i], steps[j]] = [steps[j], steps[i]];
+  return perimeterPath(size);
+}
+
+/**
+ * Randomised self-avoiding walk using Warnsdorff's rule — step to the
+ * neighbour with the fewest onward moves, breaking ties at random.
+ *
+ * A purely random choice dead-ends almost immediately in a corner; preferring
+ * the most constrained neighbour keeps the walk hugging unexplored space and
+ * produces the long, winding routes the puzzle needs.
+ */
+function randomWalk(size, rng, maxLen) {
+  const path = [0];
+  const seen = new Set([0]);
+  let pos = 0;
+
+  while (path.length < maxLen) {
+    const options = orthogonalNeighbors(pos, size).filter(n => !seen.has(n));
+    if (options.length === 0) break;
+
+    let fewest = Infinity;
+    let tied = [];
+    for (const n of options) {
+      const onward = orthogonalNeighbors(n, size).filter(m => !seen.has(m)).length;
+      if (onward < fewest) { fewest = onward; tied = [n]; }
+      else if (onward === fewest) tied.push(n);
+    }
+
+    pos = rng.pick(tied);
+    seen.add(pos);
+    path.push(pos);
   }
 
-  const path = [0];
-  let row = 0, col = 0;
-  for (const step of steps) {
-    if (step === 0) col++;
-    else row++;
-    path.push(row * size + col);
-  }
   return path;
 }
+
+/** Lap of the border: (0,0) -> (0,N-1) -> (N-1,N-1) -> (N-1,0). */
+function perimeterPath(size) {
+  const N = size;
+  const path = [];
+  for (let c = 0; c < N; c++)      path.push(c);
+  for (let r = 1; r < N; r++)      path.push(r * N + (N - 1));
+  for (let c = N - 2; c >= 0; c--) path.push((N - 1) * N + c);
+  return path;
+}
+
+// ── Target and obstacle placement ─────────────────────────────────────────
+
+/**
+ * Seed one target per quadrant, then fill any remaining slots by greedy
+ * farthest-point selection.
+ *
+ * Both stages maximise the distance to the targets already chosen. Picking by
+ * path order instead is what produces a diagonal streak of targets, because
+ * path order correlates with position — the spacing has to be measured in grid
+ * space, not path space.
+ */
+function pickTargets(gridPath, size, targetCount, rng) {
+  let best = null;
+  let bestGap = -1;
+
+  for (let attempt = 0; attempt < TARGET_ATTEMPTS; attempt++) {
+    const picked = pickTargetsOnce(gridPath, size, targetCount, rng);
+    const gap = closestPair(picked, size);
+    if (gap > bestGap) {
+      bestGap = gap;
+      best = picked;
+    }
+  }
+
+  return best;
+}
+
+/** Smallest Manhattan gap between any two of `cells`; Infinity if under two. */
+function closestPair(cells, size) {
+  let smallest = Infinity;
+  for (let i = 0; i < cells.length; i++) {
+    for (let j = i + 1; j < cells.length; j++) {
+      const d = manhattan(cells[i], cells[j], size);
+      if (d < smallest) smallest = d;
+    }
+  }
+  return smallest;
+}
+
+function pickTargetsOnce(gridPath, size, targetCount, rng) {
+  const wanted = Math.max(1, targetCount | 0);
+
+  // The start is burned on init and can never be re-entered, so a target
+  // there would make the board silently unwinnable.
+  const candidates = gridPath.filter((_, i) => i > 0);
+  const byQuadrant = [[], [], [], []];
+  for (const cell of candidates) byQuadrant[quadrantOf(cell, size)].push(cell);
+
+  const targets = [];
+
+  // Shuffle quadrant order so the same corner of the board is not always
+  // seeded first, which would bias where the remaining targets can go.
+  for (const q of rng.shuffle([0, 1, 2, 3])) {
+    if (targets.length >= wanted) break;
+    if (byQuadrant[q].length === 0) continue;
+    targets.push(farthestFrom(byQuadrant[q], targets, size, rng));
+  }
+
+  while (targets.length < wanted) {
+    const pool = candidates.filter(c => !targets.includes(c));
+    if (pool.length === 0) break;
+    targets.push(farthestFrom(pool, targets, size, rng));
+  }
+
+  return targets;
+}
+
+/** The cell in `pool` whose nearest already-chosen target is furthest away. */
+function farthestFrom(pool, chosen, size, rng) {
+  if (chosen.length === 0) return rng.pick(pool);
+
+  let best = -1;
+  let tied = [];
+  for (const cell of pool) {
+    let nearest = Infinity;
+    for (const t of chosen) {
+      const d = manhattan(cell, t, size);
+      if (d < nearest) nearest = d;
+    }
+    if (nearest > best) { best = nearest; tied = [cell]; }
+    else if (nearest === best) tied.push(cell);
+  }
+  return rng.pick(tied);
+}
+
+function manhattan(a, b, size) {
+  return Math.abs(Math.floor(a / size) - Math.floor(b / size))
+       + Math.abs((a % size) - (b % size));
+}
+
+/**
+ * Impassable cells scattered through the off-path interior. Seeded, so a given
+ * daily puzzle is identical for every player — an earlier implementation used
+ * Math.random() here and silently broke that.
+ */
+function scatterObstacles(size, gridPath, targets, rng) {
+  const blocked = new Set([...gridPath, ...targets]);
+  const free = [];
+  for (let i = 0; i < size * size; i++) {
+    if (!blocked.has(i)) free.push(i);
+  }
+  rng.shuffle(free);
+  const count = Math.round(free.length * OBSTACLE_DENSITY);
+  return free.slice(0, count).sort((a, b) => a - b);
+}
+
+// ── Internal helpers ──────────────────────────────────────────────────────
 
 /**
  * Find a random walk on the RYB hypercube from `start` to `target`
  * in exactly `length` steps.
  *
  * Uses forward BFS to build reachability sets, then traces back a
- * random valid path.  State space: 8 colors × ~30 steps = trivial.
+ * random valid path.  State space: 8 colors × ~40 steps = trivial.
  */
 function buildColorWalk(start, target, length, rng) {
   // reachable[step] = Set of colors reachable from `start` in exactly `step` flips
@@ -200,8 +291,7 @@ function buildColorWalk(start, target, length, rng) {
     const next = new Set();
     for (const color of reachable[step - 1]) {
       for (const bit of PRIMARY_BITS) {
-        const c = color ^ bit;
-        if (c < COLOR_COUNT) next.add(c); // exclude Brown (≥ COLOR_COUNT)
+        next.add(color ^ bit);
       }
     }
     reachable.push(next);
@@ -228,6 +318,12 @@ function buildColorWalk(start, target, length, rng) {
   }
 
   return path;
+}
+
+function neighborColors(idx, size, colors) {
+  return new Set(
+    orthogonalNeighbors(idx, size).map(n => colors[n]).filter(c => c !== -1),
+  );
 }
 
 function orthogonalNeighbors(idx, size) {
