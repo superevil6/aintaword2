@@ -1,42 +1,160 @@
-import "./colorpath.css";
+// NB: styles are imported by index.js, not here — keeping game.js free of
+// CSS imports is what lets scripts/e2e.mjs drive it under jsdom.
 import { Grid } from "./grid.js";
 import { generateGrid } from "./generator.js";
 import { COLOR_HEX, COLOR_NAMES, PRIMARIES, primaryAdds } from "./colors.js";
+import {
+  DIFFICULTIES,
+  DIFFICULTY_ORDER,
+  DEFAULT_DIFFICULTY,
+  getDifficulty,
+} from "./difficulty.js";
+import {
+  todayKey,
+  dailySeedFor,
+  getResult,
+  saveResult,
+  bestResult,
+  recordBest,
+} from "./results.js";
+import { buildShareText, copyToClipboard } from "./share.js";
 import { Rng } from "../../core/rng.js";
 
 export class ColorPathGame {
   /**
    * @param {HTMLElement} container
    * @param {object}      opts
-   * @param {number}      opts.size        - Grid side length
-   * @param {number}      opts.targetCount - How many circles must be collected
-   * @param {string}      opts.seed        - Seed string for deterministic generation
+   * @param {string}      opts.difficulty - Skip the picker and open straight
+   *                                        into this tier
+   * @param {string}      opts.seed       - Seed prefix, for tests and a future
+   *                                        practice mode
    */
   constructor(container, opts = {}) {
     this.root = container;
-    this.size = opts.size ?? 7;
-    this.targetCount = opts.targetCount ?? 3;
-    this.seed = opts.seed ?? String(Date.now());
+    this.opts = opts;
+    this.profile = null;     // active difficulty profile, null on the picker
+    this.size = 0;
+    this.targetCount = 0;
+    this.seed = null;
 
     this.grid = null;
     this._cells    = [];   // DOM elements indexed by cell index
-    this._arrows   = [];   // SVG <line> elements for drawn path
     this._svgEl    = null;
     this._pending  = [];   // cell indices highlighted awaiting player tap
+    this._preview  = [];   // cell indices previewed under a hovered primary
     this._startTime = null;  // Timestamp when game started
     this._timerInterval = null;  // Timer update interval ID
     this._timerEl = null;  // Timer display element
     this._gameActive = false;  // Whether the game is currently in progress
+    this._shareTimer = null;   // Resets the share button label
+    this._shareBox = null;     // Manual-copy textarea, when the clipboard fails
 
-    this._build();
+    // Arrow endpoints are measured from live layout, so they go stale whenever
+    // the grid resizes — a window drag, or a phone rotating.
+    this._onResize = () => this._renderArrows();
+    window.addEventListener("resize", this._onResize);
+
+    if (opts.difficulty) this.start(opts.difficulty);
+    else this._showSelect();
   }
 
   destroy() {
-    if (this._timerInterval) {
-      clearInterval(this._timerInterval);
-    }
+    this._stopTimer();
+    clearTimeout(this._shareTimer);
+    window.removeEventListener("resize", this._onResize);
     this.root.innerHTML = "";
     document.documentElement.style.removeProperty("--cp-player-color");
+  }
+
+  /**
+   * Begin a puzzle at the given difficulty.
+   *
+   * The seed is derived from (day + difficulty), so every player gets the same
+   * board for today's Easy/Medium/Hard. opts.seed overrides the day part for
+   * tests; newGame() overrides the whole thing for a throwaway puzzle.
+   */
+  start(difficultyId = this.profile?.id ?? DEFAULT_DIFFICULTY) {
+    this._applyProfile(difficultyId);
+    this.seed = this.opts.seed != null
+      ? `${this.opts.seed}:${this.profile.id}`
+      : dailySeedFor(this.profile.id);
+    this._build();
+  }
+
+  _applyProfile(difficultyId) {
+    this.profile     = getDifficulty(difficultyId);
+    this.size        = this.profile.size;
+    this.targetCount = this.profile.targetCount;
+  }
+
+  // ── Difficulty picker ────────────────────────────────────────────────────
+
+  _showSelect() {
+    this._stopTimer();
+    this._pending = [];
+    this.root.innerHTML = "";
+    this.root.className = "cp cp--select";
+
+    const card = document.createElement("div");
+    card.className = "cp-card";
+    card.innerHTML = `
+      <h1 class="cp-card-title">Color Path</h1>
+      <p class="cp-card-lede">Every circle is red, yellow and blue mixed together. White is none of them.</p>
+      <ul class="cp-rules">
+        <li>Tap a primary to <strong>add</strong> it (+) or <strong>remove</strong> it (&minus;), then step to a neighbouring circle of your new colour.</li>
+        <li>Hover or focus a primary to see where it would take you.</li>
+        <li>Circles burn out behind you. Tap one you have already visited to backtrack &mdash; your move count stays.</li>
+        <li>Collect <strong>every glowing circle</strong> to finish.</li>
+      </ul>
+    `;
+
+    const list = document.createElement("div");
+    list.className = "cp-picker";
+
+    let firstBtn = null;
+    for (const id of DIFFICULTY_ORDER) {
+      const prof = DIFFICULTIES[id];
+      const done = getResult(id);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `cp-pick${done ? " is-done" : ""}`;
+      btn.innerHTML = `
+        <span class="cp-pick-main">
+          <span class="cp-pick-label">${escapeHtml(prof.label)}</span>
+          <span class="cp-pick-blurb">${
+            done ? "Solved today — view result" : escapeHtml(prof.blurb)
+          }</span>
+        </span>
+        <span class="cp-pick-spec">
+          <span class="cp-pick-size">${
+            done ? `${done.moves}` : `${prof.size}&times;${prof.size}`
+          }</span>
+          <span class="cp-pick-nodes">${
+            done
+              ? `move${done.moves === 1 ? "" : "s"} · ${formatTime(done.timeMs)}`
+              : `${prof.targetCount} circles`
+          }</span>
+        </span>
+      `;
+      btn.setAttribute(
+        "aria-label",
+        done
+          ? `${prof.label}: solved today in ${done.moves} moves, ` +
+            `${formatTime(done.timeMs)}. View result.`
+          : `${prof.label}: ${prof.blurb}. ` +
+            `${prof.size} by ${prof.size} grid, ${prof.targetCount} circles to collect.`,
+      );
+      btn.addEventListener("click", () =>
+        done ? this._showStoredResult(id, done) : this.start(id),
+      );
+      list.appendChild(btn);
+      firstBtn ||= btn;
+    }
+
+    card.appendChild(list);
+    this.root.appendChild(card);
+    firstBtn?.focus();
   }
 
   // ── Setup ────────────────────────────────────────────────────────────────
@@ -45,6 +163,12 @@ export class ColorPathGame {
     const rng    = new Rng(this.seed);
     const { colors, targets, obstacles } = generateGrid(this.size, this.targetCount, rng);
     this.grid    = new Grid(this.size, colors, targets, obstacles);
+
+    // A rebuild is a fresh puzzle: drop any running clock and its start stamp,
+    // or "New puzzle" inherits the previous run's elapsed time.
+    this._stopTimer();
+    this._startTime = null;
+    this._pending = [];
 
     this.root.innerHTML = "";
     this.root.className = "cp";
@@ -123,44 +247,38 @@ export class ColorPathGame {
       btn.setAttribute("aria-label", name);
       btn.style.setProperty("--primary-color", hex);
       btn.addEventListener("click", () => this._onPrimaryClick(bit));
+
+      // Preview where this primary would land you. Teaching the colour rule by
+      // showing its consequence beats any amount of explanatory text.
+      btn.addEventListener("pointerenter", () => this._showPreview(bit));
+      btn.addEventListener("pointerleave", () => this._clearPreview());
+      btn.addEventListener("focus", () => this._showPreview(bit));
+      btn.addEventListener("blur", () => this._clearPreview());
+
       controls.appendChild(btn);
       return btn;
     });
     this.root.appendChild(controls);
 
-    // Debug: New Game button
-    const debugBtn = document.createElement("button");
-    debugBtn.textContent = "New Game";
-    debugBtn.className = "cp-debug-btn";
-    debugBtn.style.marginTop = "0.5rem";
-    debugBtn.style.padding = "0.4rem 0.8rem";
-    debugBtn.style.fontSize = "0.75rem";
-    debugBtn.style.borderRadius = "4px";
-    debugBtn.style.border = "1px solid rgba(255,255,255,0.2)";
-    debugBtn.style.background = "rgba(255,255,255,0.05)";
-    debugBtn.style.color = "rgba(255,255,255,0.6)";
-    debugBtn.style.cursor = "pointer";
-    debugBtn.style.transition = "all 0.15s";
-    debugBtn.addEventListener("click", () => this.newGame());
-    debugBtn.addEventListener("mouseover", (e) => {
-      e.target.style.background = "rgba(255,255,255,0.1)";
-      e.target.style.color = "rgba(255,255,255,0.9)";
-    });
-    debugBtn.addEventListener("mouseout", (e) => {
-      e.target.style.background = "rgba(255,255,255,0.05)";
-      e.target.style.color = "rgba(255,255,255,0.6)";
-    });
-    this.root.appendChild(debugBtn);
+    // Footer action — back to the picker. There is deliberately no "new
+    // puzzle": one board per tier per day, the same for every player.
+    const actions = document.createElement("div");
+    actions.className = "cp-actions";
+
+    const diffBtn = document.createElement("button");
+    diffBtn.type = "button";
+    diffBtn.className = "cp-action-btn cp-action-btn--difficulty";
+    diffBtn.textContent = `${this.profile.label} ▾`;
+    diffBtn.setAttribute(
+      "aria-label",
+      `Difficulty: ${this.profile.label}. Change difficulty.`,
+    );
+    diffBtn.addEventListener("click", () => this._showSelect());
+
+    actions.append(diffBtn);
+    this.root.appendChild(actions);
 
     this._renderState();
-  }
-
-  // ── Debug helpers ───────────────────────────────────────────────────────
-
-  newGame() {
-    // Generate a new random seed and rebuild
-    this.seed = String(Date.now() + Math.random() * 1000000);
-    this._build();
   }
 
   // ── Interaction ──────────────────────────────────────────────────────────
@@ -204,6 +322,7 @@ export class ColorPathGame {
   }
 
   _resolveMove(idx) {
+    this._clearPreview();
     if (this.grid.isVisited(idx)) {
       this._showBacktrackModal(idx);
     } else {
@@ -219,6 +338,26 @@ export class ColorPathGame {
       this._cells[idx]?.classList.remove("cp-cell--pending");
     }
     this._pending = [];
+  }
+
+  // ── Move preview ─────────────────────────────────────────────────────────
+
+  _showPreview(bit) {
+    this._clearPreview();
+    // While a multi-target choice is open, the pending highlight is what the
+    // player needs to act on; a second highlight competing with it just muddles.
+    if (this._pending.length > 0) return;
+    this._preview = this.grid.targetsFor(bit);
+    for (const idx of this._preview) {
+      this._cells[idx]?.classList.add("cp-cell--preview");
+    }
+  }
+
+  _clearPreview() {
+    for (const idx of this._preview) {
+      this._cells[idx]?.classList.remove("cp-cell--preview");
+    }
+    this._preview = [];
   }
 
   // ── Backtrack modal ──────────────────────────────────────────────────────
@@ -258,43 +397,153 @@ export class ColorPathGame {
   // ── Win screen ───────────────────────────────────────────────────────────
 
   _showWin() {
-    this._gameActive = false;
-    if (this._timerInterval) {
-      clearInterval(this._timerInterval);
-    }
-    
-    const moves = this.grid.moves;
-    const timeText = this._timerEl?.textContent || "0:00";
+    this._stopTimer();
+
+    const moves  = this.grid.moves;
+    const timeMs = this._startTime ? Date.now() - this._startTime : 0;
+
+    saveResult(this.profile.id, { moves, timeMs });
+    const isRecord = recordBest(this.profile.id, { moves, timeMs });
 
     const screen = document.createElement("div");
     screen.className = "cp-win";
     screen.innerHTML = `
       <div class="cp-win-inner">
         <p class="cp-win-label">Solved!</p>
-        <p class="cp-win-time" style="font-size: 2rem; color: #4fc3f7; margin: 0.5rem 0; font-weight: bold;">${timeText}</p>
-        <p class="cp-win-moves">${moves}</p>
-        <p class="cp-win-moves-label">move${moves === 1 ? "" : "s"}</p>
+        ${this._resultStats({ moves, timeMs, isRecord })}
+        ${this._resultActionsHtml()}
       </div>
     `;
+
     this.root.appendChild(screen);
+    this._wireResultActions(screen, { moves, timeMs });
+  }
+
+  /** The result for a tier already solved today, reached from the picker. */
+  _showStoredResult(id, result) {
+    this._applyProfile(id);
+    this._stopTimer();
+    this._pending = [];
+    this.root.innerHTML = "";
+    this.root.className = "cp cp--select";
+
+    const card = document.createElement("div");
+    card.className = "cp-card";
+    card.innerHTML = `
+      <h1 class="cp-card-title">${escapeHtml(this.profile.label)}</h1>
+      <p class="cp-card-lede">You solved today's board. Come back tomorrow for a new one.</p>
+      <div class="cp-win-inner cp-result">
+        ${this._resultStats({ moves: result.moves, timeMs: result.timeMs, isRecord: false })}
+      </div>
+      ${this._resultActionsHtml()}
+    `;
+
+    this.root.appendChild(card);
+    this._wireResultActions(card, { moves: result.moves, timeMs: result.timeMs });
+  }
+
+  _resultActionsHtml() {
+    return `
+      <div class="cp-win-actions">
+        <button type="button" class="cp-action-btn cp-share">Share result</button>
+        <button type="button" class="cp-action-btn cp-win-menu">Back to menu</button>
+      </div>
+    `;
+  }
+
+  _wireResultActions(scope, result) {
+    const share = scope.querySelector(".cp-share");
+    share.addEventListener("click", () => this._share(share, result));
+    scope.querySelector(".cp-win-menu")
+      .addEventListener("click", () => this._showSelect());
+    share.focus();
+  }
+
+  // ── Sharing ──────────────────────────────────────────────────────────────
+
+  shareText({ moves, timeMs }) {
+    return buildShareText({
+      moves,
+      timeMs,
+      difficultyLabel: this.profile.label,
+      daily: todayKey(),
+      best: bestResult(this.profile.id),
+    });
+  }
+
+  async _share(btn, result) {
+    const text   = this.shareText(result);
+    const label  = btn.textContent;
+    const copied = await copyToClipboard(text);
+
+    btn.textContent = copied ? "Copied!" : "Copy it below";
+    btn.classList.toggle("is-done", copied);
+
+    // Clipboard access can be blocked (plain http, in-app browsers). Never
+    // claim a success we didn't get — surface the text to copy by hand.
+    if (!copied) this._showShareFallback(btn, text);
+
+    clearTimeout(this._shareTimer);
+    this._shareTimer = setTimeout(() => {
+      btn.textContent = label;
+      btn.classList.remove("is-done");
+    }, 2200);
+  }
+
+  _showShareFallback(btn, text) {
+    this._shareBox?.remove();
+    const box = document.createElement("textarea");
+    box.className = "cp-share-box";
+    box.value = text;
+    box.readOnly = true;
+    box.rows = Math.min(8, text.split("\n").length);
+    box.setAttribute("aria-label", "Your result, ready to copy");
+    btn.closest(".cp-win-actions").after(box);
+    this._shareBox = box;
+    box.focus();
+    box.select();
+  }
+
+  /** Shared stat block for both the win overlay and a stored result. */
+  _resultStats({ moves, timeMs, isRecord }) {
+    const best = bestResult(this.profile.id);
+    const footer = isRecord
+      ? `<p class="cp-win-record">★ New best!</p>`
+      : best
+        ? `<p class="cp-win-best">Best ${best.moves} move${
+            best.moves === 1 ? "" : "s"
+          } · ${formatTime(best.timeMs)}</p>`
+        : "";
+
+    return `
+      <p class="cp-win-time">${formatTime(timeMs)}</p>
+      <p class="cp-win-moves">${moves}</p>
+      <p class="cp-win-moves-label">move${moves === 1 ? "" : "s"}</p>
+      ${footer}
+    `;
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
 
   _startTimer() {
     if (this._startTime !== null) return; // Already started
+    this._stopTimer();
     this._startTime = Date.now();
     this._gameActive = true;
-    if (this._timerInterval) clearInterval(this._timerInterval);
     this._timerInterval = setInterval(() => this._updateTimer(), 100);
+  }
+
+  _stopTimer() {
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+      this._timerInterval = null;
+    }
+    this._gameActive = false;
   }
 
   _updateTimer() {
     if (!this._gameActive || !this._startTime) return;
-    const elapsed = Math.floor((Date.now() - this._startTime) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    this._timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    this._timerEl.textContent = formatTime(Date.now() - this._startTime);
   }
 
   _renderState() {
@@ -317,6 +566,7 @@ export class ColorPathGame {
       cell.classList.toggle("cp-cell--visited",
         grid.isVisited(idx) && idx !== grid.currentIndex && !grid.isTarget(idx));
       cell.classList.toggle("cp-cell--pending", this._pending.includes(idx));
+      cell.classList.toggle("cp-cell--preview", this._preview.includes(idx));
       
       // Visited cells show the current player color
       if (grid.isVisited(idx) && idx !== grid.currentIndex && !grid.isObstacle(idx)) {
@@ -326,18 +576,15 @@ export class ColorPathGame {
       }
     }
 
-    // Primary buttons: show only primaries that have ≥1 valid target
+    // Primary buttons stay put and grey out when unusable. Hiding them shifted
+    // the layout every move, and silently filtered the illegal options — which
+    // is the colour reasoning the game is actually about.
     for (const btn of this._primaryBtns) {
       const bit     = Number(btn.dataset.bit);
       const targets = grid.targetsFor(bit);
 
-      if (targets.length === 0) {
-        btn.hidden = true;
-        continue;
-      }
-
       btn.hidden   = false;
-      btn.disabled = false;
+      btn.disabled = targets.length === 0;
       const adds   = primaryAdds(grid.currentColor, bit);
       btn.textContent = adds ? "+" : "−";
       btn.classList.toggle("cp-primary--backtracks",
@@ -355,6 +602,9 @@ export class ColorPathGame {
   }
 
   _renderArrows() {
+    // The picker and result screens replace the board wholesale, so a resize
+    // can fire while the SVG layer is detached.
+    if (!this._svgEl?.isConnected || !this.grid) return;
     this._svgEl.innerHTML = "";
     const { trail } = this.grid;
     if (trail.length < 2) return;
@@ -405,6 +655,14 @@ export class ColorPathGame {
       this._svgEl.appendChild(head);
     }
   }
+}
+
+/** Elapsed milliseconds as M:SS. */
+function formatTime(ms) {
+  const total   = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function escapeHtml(s) {

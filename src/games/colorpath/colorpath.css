@@ -3,6 +3,7 @@
 /* ── Root shell ──────────────────────────────────────────────────────────── */
 
 .cp {
+  position: relative; /* anchors the win overlay and the difficulty picker */
   width: 100%;
   max-width: 560px;
   flex: 1;
@@ -11,6 +12,150 @@
   flex-direction: column;
   align-items: center;
   gap: clamp(12px, 2.5vw, 24px);
+}
+
+/* Picker state: no board yet, so centre the card in the available space. */
+.cp--select {
+  justify-content: center;
+}
+
+/* ── Difficulty picker ───────────────────────────────────────────────────── */
+
+.cp-card {
+  width: 100%;
+  max-width: 460px;
+  background: linear-gradient(180deg, var(--bg-2), #10132700);
+  background-color: rgba(23, 26, 46, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: clamp(24px, 6vw, 40px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cp-card-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 6vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.cp-card-lede {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--fg-dim);
+}
+
+.cp-rules {
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--fg-dim);
+}
+
+.cp-rules strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.cp-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.cp-pick {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, var(--bg-2), #12152a);
+  color: var(--fg);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.08s ease, border-color 0.15s ease;
+}
+
+.cp-pick:hover {
+  border-color: var(--cp-accent, #e07818);
+  transform: translateY(-1px);
+}
+.cp-pick:active {
+  transform: translateY(0);
+}
+.cp-pick:focus-visible {
+  outline: 2px solid var(--cp-accent, #e07818);
+  outline-offset: 3px;
+}
+
+.cp-pick-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cp-pick-label {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.cp-pick-blurb {
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+  line-height: 1.3;
+}
+
+.cp-pick-spec {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.cp-pick-size {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.cp-pick-nodes {
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+}
+
+/* Already solved today: the move count stands in for the call to action. */
+.cp-pick.is-done {
+  border-color: rgba(51, 214, 159, 0.35);
+  background: linear-gradient(180deg, rgba(51, 214, 159, 0.08), #12152a);
+}
+
+.cp-pick.is-done .cp-pick-size {
+  font-size: 1.4rem;
+  color: var(--good);
+}
+
+/* A stored result sits inside a card rather than over the board. */
+.cp-result {
+  margin: 0.5rem 0;
 }
 
 /* ── HUD ─────────────────────────────────────────────────────────────────── */
@@ -139,6 +284,14 @@
   filter: none;
 }
 
+/* Preview: where the hovered primary would take you. Dashed and static, so it
+   reads as "could go here" rather than the solid pulse of "choose one now". */
+.cp-cell--preview {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.85);
+  transform: scale(1.05);
+}
+
 /* Pending: multiple targets highlighted awaiting player tap */
 .cp-cell--pending {
   border-color: white;
@@ -258,4 +411,62 @@
   margin: 0;
   font-size: 1rem;
   color: var(--fg-dim);
+}
+
+/* Solve time — previously inline-styled from game.js. */
+.cp-win-time {
+  margin: 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cp-time, #4fc3f7);
+}
+
+.cp-win-record {
+  margin: 0.4rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--good);
+}
+
+.cp-win-best {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Share button, mid-confirmation. */
+.cp-action-btn.is-done {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+/* Manual-copy fallback when the clipboard API is unavailable or blocked. */
+.cp-share-box {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.cp-win-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* The difficulty button doubles as a label for the tier in play. */
+.cp-action-btn--difficulty {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.06em;
 }

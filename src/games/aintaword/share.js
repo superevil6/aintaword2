@@ -6,6 +6,11 @@
 // reason Wordle shares squares rather than letters.
 
 import { shareUrl } from "../../config.js";
+import { copyToClipboard } from "../../core/clipboard.js";
+
+// Re-exported so existing callers keep importing it from here; the definition
+// now lives in core/clipboard.js so every game shares one fallback path.
+export { copyToClipboard };
 
 const HIT = "🟩";
 const MISS = "🟥";
@@ -52,39 +57,3 @@ export function buildShareText({ score, history = [], difficultyLabel, daily, ur
   return lines.join("\n");
 }
 
-/**
- * Copy text to the clipboard.
- *
- * navigator.clipboard needs a secure context (https / localhost) AND a user
- * gesture; it rejects on plain http and in some in-app browsers. Falls back to
- * a hidden textarea + execCommand, and reports honestly if both fail so the UI
- * can offer manual selection instead of silently claiming success.
- *
- * @returns {Promise<boolean>} whether the copy actually succeeded
- */
-export async function copyToClipboard(text) {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    /* fall through to the legacy path */
-  }
-
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    // Keep it off-screen but still selectable; display:none would break select().
-    ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0;";
-    document.body.appendChild(ta);
-    ta.select();
-    ta.setSelectionRange(0, text.length);
-    const ok = document.execCommand?.("copy") ?? false;
-    ta.remove();
-    return !!ok;
-  } catch {
-    return false;
-  }
-}

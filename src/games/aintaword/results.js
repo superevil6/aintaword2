@@ -5,22 +5,15 @@
 // keyed to a single day and self-prunes — if the stored date isn't today, the
 // whole blob is treated as empty, so localStorage never accumulates history.
 
+import { todayKey } from "../../core/daily.js";
+
 const KEY = "aintaword2:aintaword:daily";
 const BEST_KEY = "aintaword2:aintaword:best";
 
-/**
- * The canonical "today", in UTC.
- *
- * UTC (not local time) so that everyone in the world is on the same puzzle at
- * the same moment — two friends comparing scores across a timezone border
- * would otherwise be playing different sets on the same calendar date. The
- * tradeoff is that the day rolls over mid-evening for some players. This is
- * the ONE place that decision lives; switch to local dates here if you'd
- * rather match the player's calendar.
- */
-export function todayKey(now = new Date()) {
-  return now.toISOString().slice(0, 10); // YYYY-MM-DD
-}
+// Re-exported so existing callers (game.js, index.js, scripts/e2e.mjs) keep
+// importing it from here; the definition now lives in core/daily.js so both
+// games share one notion of when the day rolls over.
+export { todayKey };
 
 /** Deterministic seed for a given day + difficulty — identical for all players. */
 export function dailySeedFor(difficulty, day = todayKey()) {

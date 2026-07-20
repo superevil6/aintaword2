@@ -131,7 +131,10 @@ const spreadStats = new Map(); // tier -> { minGap, quadHist }
 for (const d of tiers) {
   const N = d.size;
   const wantQuads = Math.min(4, d.targetCount);
-  const stats = { minGap: Infinity, quadHist: [0, 0, 0, 0], gapSum: 0, tight: 0, n: 0 };
+  const stats = {
+    minGap: Infinity, quadHist: [0, 0, 0, 0], gapSum: 0, tight: 0, n: 0,
+    openSum: 0, forcedOpen: 0,
+  };
   spreadStats.set(d.id, stats);
 
   for (let s = 0; s < STRUCTURAL_SEEDS; s++) {
@@ -165,6 +168,16 @@ for (const d of tiers) {
         if (gap === 0) fail(d.id, s, `two targets on the same cell`);
       }
     }
+    // Opening choice: how many primaries are live on move one? A board that
+    // offers exactly one is a forced first move and teaches the player nothing.
+    const obs = new Set(obstacles);
+    let liveOpenings = 0;
+    for (const bit of PRIMARIES) {
+      if (movesFor(N, colors, obs, new Set([0]), 0, bit).length > 0) liveOpenings++;
+    }
+    stats.openSum += liveOpenings;
+    if (liveOpenings < 2) stats.forcedOpen++;
+
     stats.n++;
     stats.gapSum += boardMin;
     if (boardMin < stats.minGap) stats.minGap = boardMin;
@@ -210,6 +223,10 @@ for (const d of tiers) {
     ` / worst ${st.minGap}` +
     ` | crowded (<=2 apart) ${((st.tight / st.n) * 100).toFixed(1)}%` +
     ` | quad share ${share}`,
+  );
+  console.log(
+    `          opening moves avg ${(st.openSum / st.n).toFixed(2)} of 3` +
+    ` | forced (only one option) ${((st.forcedOpen / st.n) * 100).toFixed(1)}%`,
   );
 }
 

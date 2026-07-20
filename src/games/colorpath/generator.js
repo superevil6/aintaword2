@@ -62,14 +62,28 @@ export function generateGrid(size, targetCount, rng) {
     colors[gridPath[i]] = colorPath[i];
   }
 
-  // The start has two orthogonal neighbours but the path only leaves through
-  // one of them. Force the other to a distinct primary so the opening move is
-  // a genuine choice of direction rather than a single forced option.
-  const downIdx = size;
-  if (colors[downIdx] === -1 || colors[downIdx] === WHITE) {
-    const used = neighborColors(downIdx, size, colors);
-    const free = PRIMARY_BITS.filter(c => !used.has(c) && c !== colors[1]);
-    colors[downIdx] = free.length > 0 ? rng.pick(free) : PRIMARY_BITS[0];
+  // The start has two orthogonal neighbours but the solution path only leaves
+  // through one. Colour the other one a *different* primary so the opening move
+  // is a genuine choice of direction rather than a single forced option.
+  //
+  // From WHITE every primary is one press away, so a neighbour painted primary
+  // b is always reachable by pressing b — two distinct primaries means two live
+  // buttons on move one.
+  //
+  // This used to hard-code the cell below the start, which was only ever the
+  // off-path one back when the path was right/down-only. A wandering path
+  // leaves downward just as often, and then the cell to the right was left to
+  // the greedy fill — which paints from all eight colours, frequently stranding
+  // the player with exactly one legal opening.
+  const pathCells = new Set(gridPath);
+  const exitColor = colors[gridPath[1]];
+  for (const idx of orthogonalNeighbors(0, size)) {
+    if (pathCells.has(idx)) continue; // its colour belongs to the colour walk
+    const used = neighborColors(idx, size, colors);
+    const free = PRIMARY_BITS.filter(c => !used.has(c) && c !== exitColor);
+    colors[idx] = free.length > 0
+      ? rng.pick(free)
+      : PRIMARY_BITS.find(c => c !== exitColor) ?? PRIMARY_BITS[0];
   }
 
   // Greedy fill — avoid direct neighbors only.
@@ -120,9 +134,20 @@ function buildPath(size, targetCount, rng) {
   for (let attempt = 0; attempt < PATH_ATTEMPTS; attempt++) {
     const path = randomWalk(size, rng, maxLen);
     if (path.length < minLen) continue;
+
     const quads = new Set(path.map(i => quadrantOf(i, size)));
-    if (quads.size === 4) return path;
+    if (quads.size !== 4) continue;
+
+    // Leave at least one of the start's two neighbours off-path. If the walk
+    // claims both, the colour walk owns both of their colours and there is no
+    // way to guarantee a second live primary on move one — the player opens
+    // with a single forced move and learns nothing from it.
+    const visited = new Set(path);
+    if (visited.has(1) && visited.has(size)) continue;
+
+    return path;
   }
+  // The perimeter leaves (1,0) untouched, so it always satisfies the above.
   return perimeterPath(size);
 }
 
@@ -265,7 +290,13 @@ function manhattan(a, b, size) {
  * Math.random() here and silently broke that.
  */
 function scatterObstacles(size, gridPath, targets, rng) {
-  const blocked = new Set([...gridPath, ...targets]);
+  // The start's neighbours are never eligible: walling one off silently undoes
+  // the opening-choice guarantee above.
+  const blocked = new Set([
+    ...gridPath,
+    ...targets,
+    ...orthogonalNeighbors(0, size),
+  ]);
   const free = [];
   for (let i = 0; i < size * size; i++) {
     if (!blocked.has(i)) free.push(i);
