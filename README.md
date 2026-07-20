@@ -1,0 +1,249 @@
+# Ain't a Word
+
+A browser word game, built in vanilla JS + HTML5 with [Vite](https://vitejs.dev/).
+The repo is structured as a **collection** — one game today, more later — so each
+game is a self-contained module registered with a shared game registry.
+
+## The game
+
+A 60-second score attack. Two words appear; one is real and one is a convincing
+**fake** — a real word with a hard-to-notice alteration (a swapped vowel, a
+dropped double letter, two transposed letters), always keeping the first and
+last letter intact.
+
+- Pick the real word → **+1 point**.
+- Pick the fake → **−3 seconds** off a clock that never stops, with a floating
+  `-3` by the timer. (Tune via `PENALTY_MS` in `game.js`; the start-screen rules
+  text and the indicator both read from it.)
+- Clock hits zero → run over, score shown, best score saved locally.
+- The game-over screen lists **every round you answered** — the real word, the
+  fake beside it, and whether you got it — so you can see what caught you out.
+  (The round still on screen when time expires was never answered, so it isn't
+  listed.)
+
+`palace` is real. `malace` is not. `balloon` is real. `baloon` is not.
+
+## Daily structure
+
+The game opens on a **difficulty picker**, not straight into a run. Each
+difficulty is a **once-per-day** challenge:
+
+- Picking an unplayed difficulty starts it.
+- Finishing stores the result; **"Play again" returns to the picker**, since the
+  other difficulties are what's left to do today.
+- A difficulty already played shows its score on the picker and leads to that
+  **stored result** — review list and share intact — rather than replaying it.
+
+The word sequence is seeded from `(UTC date + difficulty)`, so **every player
+worldwide gets the identical words for today's Easy/Medium/Hard**. That's what
+makes a shared score meaningful.
+
+> **Day rollover is UTC**, defined in one place: `todayKey()` in
+> `src/games/aintaword/results.js`. UTC means two friends either side of a
+> timezone border are on the same puzzle at the same moment; the tradeoff is
+> that the day turns over mid-evening for some players. Switch to local dates
+> there if you'd rather match the player's calendar.
+
+Storage self-prunes: results live under a single key stamped with the day, and
+anything not from today is treated as absent.
+
+> ⚠️ Not yet immutable. The sequence is still *generated* from the seed, so
+> changing the generator or the word pool changes past days too. Precomputing
+> each day's set into a data file is the fix — see the note in **Difficulty**.
+
+## Sharing
+
+The game-over card has a **Share score** button that copies text like:
+
+```
+Ain't a Word · Medium
+11 words · 92% accurate
+
+🟩🟩🟩🟥🟩🟩🟩🟩🟩🟩
+🟩🟩
+
+https://example.com
+```
+
+> **Set your domain in [`src/config.js`](src/config.js)** (`SITE_URL`). Left
+> empty, the share falls back to the player's current URL — correct on any
+> host, so this works today. Set it once you have a canonical domain, so a
+> share from a preview deploy still points people at the real site.
+
+Two deliberate properties:
+
+- **Spoiler-free.** The text contains squares, never the words. Once the daily
+  challenge ships, a share that leaked words would ruin that day for anyone who
+  read it. There's a test asserting no word ever appears in the output.
+- **Honest about failure.** `navigator.clipboard` needs a secure context and a
+  user gesture, and is blocked on plain http and in some in-app browsers. If
+  the copy fails the button says so and reveals a pre-selected text box rather
+  than claiming a success that didn't happen.
+
+Runs tagged with a `daily` option render as `Ain't a Word · Daily 2026-07-19 · Hard`.
+
+## Difficulty
+
+Difficulty is two axes, not one — see `src/games/aintaword/difficulty.js`.
+Length matters, but **familiarity matters more**: `information` is 11 letters
+and instantly recognizable, while `opuses` is 6 and baffling. SCOWL size tiers
+give us familiarity for free (tier 10 = most common, 35 = starts getting
+obscure). A third knob biases which transformations the generator prefers.
+
+| | Letters | SCOWL tiers | Pool | Example |
+| --- | --- | --- | --- | --- |
+| **Easy** | 5–6 | 10 | 1,140 | `plenty` → `planty` |
+| **Medium** | 6–10 | 10 + 20 | 7,052 | `browsing` → `brawsing` |
+| **Hard** | 10–15 | 10 + 20 + 35 | 9,182 | `structural` → `sturctural` |
+
+Profiles are **fixed for the whole run and never ramp with the score.** This is
+load-bearing for the daily challenge: a score-dependent ramp would feed two
+players on the same seed different words, so their scores wouldn't be
+comparable. There's a regression test pinning it (`sequence is independent of
+whether the player picks right or wrong`).
+
+Long words are handled by sizing the font from the word's own length against
+the button width (CSS container query units), so a 15-letter word still fits
+two-across on a 320px phone.
+
+## Run it
+
+```bash
+npm install
+npm run dev      # start the dev server (prints a localhost URL)
+npm run build    # production build into dist/
+npm run preview  # serve the production build locally
+npm test         # headless logic + end-to-end checks (no browser needed)
+```
+
+> Requires Node.js (18+). Try `sudo pacman -Syu nodejs npm` on Arch/CachyOS —
+> use `-Syu` (full sync), not a bare install, or the mirror will 404 on stale
+> package versions. No root? Drop an official prebuilt binary into your home
+> directory instead:
+>
+> ```bash
+> curl -o node.tar.xz https://nodejs.org/dist/v24.18.0/node-v24.18.0-linux-x64.tar.xz
+> mkdir -p ~/.local/opt && tar -xf node.tar.xz -C ~/.local/opt
+> ln -sf ~/.local/opt/node-v24.18.0-linux-x64/bin/{node,npm,npx} ~/.local/bin/
+> # ensure ~/.local/bin is on your PATH
+> ```
+
+## Debugging in VS Code
+
+Press <kbd>F5</kbd> and pick a configuration — the Vite dev server starts
+automatically as a `preLaunchTask`, and the browser opens once it's ready.
+
+| Configuration | Needs |
+| --- | --- |
+| ▶ Play in Firefox | `firefox-devtools.vscode-firefox-debug` extension |
+| ▶ Play in Chrome / Edge | Chrome or Edge installed |
+| 🔬 Debug word generator | nothing — steps through `wordSmith.js` in Node |
+| 🔬 Debug game flow | nothing — steps through `game.js` via jsdom |
+
+The two 🔬 configs need no browser at all, which makes them the fastest way to
+set a breakpoint in the generator or the game state machine.
+
+Tasks (<kbd>Ctrl+Shift+P</kbd> → *Run Task*): `vite: dev server`,
+`play: open in default browser` (no debugger, zero setup), `test: all`,
+`build: production`.
+
+## Layout
+
+```
+public/
+  data/dictionary.txt        152k-word validity dictionary (ENABLE, public domain)
+src/
+  main.js                    app bootstrap — mounts the game (hub goes here later)
+  core/
+    registry.js              game registry — the multi-game seam
+    dictionary.js            loads the validity dict + curated source pool
+    rng.js                   seeded PRNG (enables reproducible / daily runs)
+    timer.js                 precise rAF countdown with penalty support
+  data/
+    commonWords.js           curated pool of recognizable "real" words
+  games/
+    aintaword/
+      index.js               game descriptor + mount() — registers the game
+      game.js                game controller / state machine
+      wordSmith.js           the real-word → fake-word generator
+      aintaword.css          game styles
+  styles/global.css          shared shell styles
+```
+
+## How the fakes are made
+
+`src/games/aintaword/wordSmith.js` takes a real word and applies one of four
+interior-only transformations:
+
+| type       | example                |
+| ---------- | ---------------------- |
+| vowel-swap | `crashing` → `creshing` |
+| degeminate | `inner` → `iner`       |
+| geminate   | `holiday` → `holliday` |
+| transpose  | `ground` → `gruond`    |
+
+**The two words shown are always distinct words** — the fake is forged from its
+own unrelated source word, never from the real word beside it, and must be at
+least 3 edits away from it. Otherwise the round degenerates into
+spot-the-difference instead of "do I know this word?".
+
+Fakes must also survive a phonotactic filter, because a word judged on its own
+has to *look* like English. The generator rejects illegal onsets (`cnady`),
+consonant reordering (`cadny` — English has `nd`, never `dn`), doubling after a
+vowel digraph (`piecces`) or before a silent `e` (`madde`), 3-vowel runs
+(`curoous`), and any mutation inside a fixed suffix (`feedeng`, `pickad`).
+
+Every candidate is checked against the validity dictionary and discarded if it
+happens to be a real word (`from` → `form` never slips through). Selection runs
+through a seeded RNG, so a given seed reproduces the same run — the hook for a
+future daily challenge or shareable seed.
+
+## Adding another game
+
+1. Create `src/games/<yourgame>/index.js` that calls `registerGame({ id, title,
+   mount, ... })`.
+2. Import it (for its registration side effect) wherever games are loaded.
+3. When a second game exists, `main.js` grows into a hub that lists
+   `allGames()` and mounts the one the player picks.
+
+## Dictionary & licensing
+
+`public/data/dictionary.txt` is the **ENABLE** word list (Enhanced North
+American Benchmark Lexicon), filtered to 3–12 lowercase letters — 152,306 words.
+
+**ENABLE is public domain.** No attribution, no copyleft, no restrictions on
+commercial or ad-supported use. It's the standard word-game lexicon and contains
+no proper nouns.
+
+> Earlier revisions used the system `cracklib-small` list. That was replaced
+> deliberately: cracklib is **GPL-2.0-or-later**, and the dictionary ships to
+> every visitor in `dist/data/`, which is distribution — a copyleft trap for a
+> commercial site. Don't reintroduce it.
+
+The list is used *only* to reject candidate fakes that turn out to be real
+words, so a broad, inclusive lexicon is a feature. Swapping it is a one-file
+change; the loader just reads newline-separated words.
+
+Everything else in the toolchain (Vite, esbuild, jsdom) is MIT **and**
+build-time only — no third-party code ships in `dist/`. The game's own source,
+including the fake-word generator, is original to this project.
+
+### The source pool
+
+`src/data/commonWords.js` is the pool of real words players actually see —
+2,708 words, **generated**, not hand-written. Regenerate with:
+
+```bash
+npm run words
+```
+
+It's built from **SCOWL** size level 10 (its size tiers act as a commonness
+ranking), American/general spellings only — mixing in British forms would make
+`colour` look fake to a US player. The pipeline intersects with ENABLE, keeps
+5–9 letters, then drops function words, tonally inappropriate words, and any
+word the generator can't forge a fake from. Widen it by adding `"20"` to
+`TIERS` in `scripts/build-words.mjs`, at some cost in familiarity.
+
+SCOWL's license permits commercial use and sale of derived output provided its
+copyright notice travels along — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md),
+which you should retain when distributing the game.

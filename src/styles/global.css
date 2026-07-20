@@ -1,0 +1,66 @@
+/* Global reset + shared shell styles. Kept game-agnostic so a future hub can
+   live alongside individual games without fighting over the basics. */
+
+:root {
+  color-scheme: dark;
+  --bg: #0f1220;
+  --bg-2: #171a2e;
+  --fg: #eef0ff;
+  --fg-dim: #a6abcf;
+  --accent: #7c5cff;
+  --good: #33d69f;
+  --bad: #ff5d6c;
+  --radius: 16px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(120% 120% at 50% 0%, var(--bg-2), var(--bg) 60%);
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#app {
+  /* A DEFINITE height, not just min-height. Games lay themselves out as a
+     share of the viewport (e.g. "buttons take 80% of the space under the
+     timer"), and percentage/fr heights only resolve against a definite one.
+     min-height alone leaves descendants content-sized. */
+  height: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+.boot {
+  color: var(--fg-dim);
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+.boot-error {
+  color: var(--bad);
+  text-align: center;
+  line-height: 1.5;
+}
+.boot-error small {
+  color: var(--fg-dim);
+}
+
+button {
+  font-family: inherit;
+}

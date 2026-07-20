@@ -1,0 +1,78 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // ► Works with the browser you already have (Firefox).
+      // Requires the extension: firefox-devtools.vscode-firefox-debug
+      "name": "▶ Play in Firefox",
+      "type": "firefox",
+      "request": "launch",
+      "url": "http://localhost:5173/",
+      "webRoot": "${workspaceFolder}",
+      "reAttach": true,
+      "preLaunchTask": "vite: dev server",
+      "pathMappings": [
+        {
+          "url": "http://localhost:5173/src",
+          "path": "${workspaceFolder}/src"
+        },
+        {
+          "url": "http://localhost:5173",
+          "path": "${workspaceFolder}"
+        }
+      ]
+    },
+    {
+      // ► Uses VS Code's built-in debugger (no extension needed),
+      // but requires Chrome/Chromium to be installed.
+      "name": "▶ Play in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173/",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "vite: dev server",
+      "sourceMapPathOverrides": {
+        "/src/*": "${workspaceFolder}/src/*",
+        "/@fs/*": "/*",
+        "webpack:///./src/*": "${workspaceFolder}/src/*"
+      }
+    },
+    {
+      // ► Same as above for Edge, if that's what's installed.
+      "name": "▶ Play in Edge",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:5173/",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "vite: dev server",
+      "sourceMapPathOverrides": {
+        "/src/*": "${workspaceFolder}/src/*",
+        "/@fs/*": "/*"
+      }
+    },
+    {
+      // ► No browser or extension required — debug the word generator
+      // directly. Set breakpoints in wordSmith.js and step through.
+      "name": "🔬 Debug word generator (verify.mjs)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/verify.mjs",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "${env:HOME}/.local/bin/node",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // ► Debug the full game flow (start → pick → penalty → game over)
+      // headlessly via jsdom. Breakpoints in game.js work here.
+      "name": "🔬 Debug game flow (e2e.mjs)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/e2e.mjs",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "${env:HOME}/.local/bin/node",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    }
+  ]
+}

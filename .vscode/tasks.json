@@ -1,0 +1,78 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Background task used as the preLaunchTask for the browser configs.
+      // The `background` matcher below tells VS Code the server is "ready"
+      // once Vite prints its Local: URL, so the browser launches at the right
+      // moment instead of racing the server.
+      "label": "vite: dev server",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        // Node lives in ~/.local/bin here; pin it so the task works even if
+        // VS Code spawns a non-login shell without that on PATH.
+        "env": {
+          "PATH": "${env:HOME}/.local/bin:${env:PATH}"
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "aintaword"
+      },
+      "problemMatcher": {
+        "owner": "vite",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^([^\\s].*)\\((\\d+|\\d+,\\d+|\\d+,\\d+,\\d+,\\d+)\\):\\s*(.*)$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*VITE.*",
+          "endsPattern": "^.*(Local:|ready in).*"
+        }
+      }
+    },
+    {
+      // Zero-setup fallback: starts the server and opens your default browser
+      // (Firefox). No debugger attached, but nothing extra to install.
+      "label": "play: open in default browser",
+      "type": "shell",
+      "command": "xdg-open http://localhost:5173/",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "vite: dev server",
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "test: all",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "PATH": "${env:HOME}/.local/bin:${env:PATH}" }
+      },
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "build: production",
+      "type": "shell",
+      "command": "npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "PATH": "${env:HOME}/.local/bin:${env:PATH}" }
+      },
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}

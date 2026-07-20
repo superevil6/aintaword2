@@ -1,0 +1,23 @@
+{
+  "name": "aintaword2",
+  "version": "0.1.0",
+  "description": "A collection of browser word games. First game: Ain't a Word — a 60-second spot-the-real-word score attack.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "words": "node scripts/build-words.mjs",
+    "verify": "node scripts/verify.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "snapshot": "node scripts/snapshot.mjs",
+    "test": "npm run verify && npm run e2e"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "vite": "^6.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}
