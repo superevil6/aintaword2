@@ -5,7 +5,7 @@
 // the words would ruin the day's puzzle for everyone who reads it — the same
 // reason Wordle shares squares rather than letters.
 
-import { shareUrl } from "../../config.js";
+import { gameUrl } from "../../config.js";
 import { copyToClipboard } from "../../core/clipboard.js";
 
 // Re-exported so existing callers keep importing it from here; the definition
@@ -51,7 +51,9 @@ export function buildShareText({ score, history = [], difficultyLabel, daily, ur
     lines.push("", ...rows);
   }
 
-  const link = url === undefined ? shareUrl() : url;
+  // Deep-links to this game rather than the hub, so a shared score opens the
+  // thing it is bragging about.
+  const link = url === undefined ? gameUrl("aintaword") : url;
   if (link) lines.push("", link);
 
   return lines.join("\n");

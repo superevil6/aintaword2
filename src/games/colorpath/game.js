@@ -68,6 +68,7 @@ export class ColorPathGame {
     this._stopTimer();
     clearTimeout(this._shareTimer);
     window.removeEventListener("resize", this._onResize);
+    this.root.classList.remove("cp", "cp--select");
     this.root.innerHTML = "";
     document.documentElement.style.removeProperty("--cp-player-color");
   }
@@ -85,6 +86,17 @@ export class ColorPathGame {
       ? `${this.opts.seed}:${this.profile.id}`
       : dailySeedFor(this.profile.id);
     this._build();
+  }
+
+  /**
+   * Take ownership of our own classes on the host container without wiping
+   * whatever the shell put there. Assigning `className` outright used to strip
+   * main.js's `.app-view`, silently dropping the layout rules it provides —
+   * invisible only because `.cp` happens to redeclare similar ones.
+   */
+  _setShell({ select }) {
+    this.root.classList.add("cp");
+    this.root.classList.toggle("cp--select", select);
   }
 
   /** Stop the picker demo's loop; safe to call when it isn't mounted. */
@@ -108,7 +120,7 @@ export class ColorPathGame {
     this._pending = [];
     this._preview = [];
     this.root.innerHTML = "";
-    this.root.className = "cp cp--select";
+    this._setShell({ select: true });
 
     const card = document.createElement("div");
     card.className = "cp-card";
@@ -196,7 +208,7 @@ export class ColorPathGame {
     this._preview = [];
 
     this.root.innerHTML = "";
-    this.root.className = "cp";
+    this._setShell({ select: false });
 
     // HUD
     const hud = document.createElement("div");
@@ -468,7 +480,7 @@ export class ColorPathGame {
     this._stopTimer();
     this._pending = [];
     this.root.innerHTML = "";
-    this.root.className = "cp cp--select";
+    this._setShell({ select: true });
 
     const card = document.createElement("div");
     card.className = "cp-card";

@@ -5,7 +5,7 @@
 // share that leaked the layout would ruin the day for whoever reads it. Moves
 // and time give you something to beat without giving away how.
 
-import { shareUrl } from "../../config.js";
+import { gameUrl } from "../../config.js";
 import { copyToClipboard } from "../../core/clipboard.js";
 
 export { copyToClipboard };
@@ -46,7 +46,9 @@ export function buildShareText({ moves, timeMs, difficultyLabel, daily, best, ur
     lines.push("★ New best");
   }
 
-  const link = url === undefined ? shareUrl() : url;
+  // Deep-links straight to Color Path rather than the hub, so a shared result
+  // opens the game it is bragging about.
+  const link = url === undefined ? gameUrl("colorpath") : url;
   if (link) lines.push("", link);
 
   return lines.join("\n");
