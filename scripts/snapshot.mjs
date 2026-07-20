@@ -51,7 +51,20 @@ const dict = {
 };
 
 const app = document.getElementById("app");
-const game = new AintAWordGame(app, dict, { seed: "snapshot" });
+
+// "daily" mode drives the game from a real precomputed file with dict = null,
+// exactly as the shipped app does.
+let gameDict = dict;
+let gameOpts = { seed: "snapshot" };
+if (mode === "daily") {
+  const dailyDir = path.join(root, "public/data/daily");
+  const { readdirSync } = await import("node:fs");
+  const file = readdirSync(dailyDir).filter((f) => f.endsWith(".json")).sort()[0];
+  const data = JSON.parse(readFileSync(path.join(dailyDir, file), "utf8"));
+  gameDict = null;
+  gameOpts = { daily: data.date, pairsFor: (id) => data.sets[id] };
+}
+const game = new AintAWordGame(app, gameDict, gameOpts);
 
 if (mode === "select" || mode === "select-played") {
   if (mode === "select-played") {
@@ -64,7 +77,7 @@ if (mode === "select" || mode === "select-played") {
     game._showSelect();
   }
 } else {
-  game.start("medium");
+  game.start(mode === "daily" ? "hard" : "medium");
 }
 
 let extraCss = "";
@@ -85,7 +98,7 @@ if (mode === "penalty") {
     game.choiceEls[i % 4 === 3 ? 1 - game.correctSide : game.correctSide].click();
   }
   game.timer.adjust(-999999);
-} else {
+} else if (mode === "board") {
   // Force specific words on to stress-test fitting. Pass a comma pair as the
   // 4th arg, e.g. `node scripts/snapshot.mjs out.html board straightforward,misundderstanding`
   const forced = (process.argv[4] || "processing,recceiving").split(",");
@@ -93,6 +106,7 @@ if (mode === "penalty") {
   game.sides[1] = forced[1];
   game._renderChoices();
 }
+// "daily" mode leaves the real precomputed words in place.
 
 const css = [
   readFileSync(path.join(root, "src/styles/global.css"), "utf8"),

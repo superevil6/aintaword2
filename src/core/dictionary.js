@@ -13,13 +13,12 @@
 // The validity set is fetched at runtime from /data/dictionary.txt (kept out of
 // the JS bundle — it's plain text and compresses well over the wire).
 
-import { WORDS_BY_TIER, wordsForTiers } from "../data/commonWords.js";
-
 export class Dictionary {
   constructor() {
     this.valid = new Set();
     this.sources = [];
     this.loaded = false;
+    this._words = null; // the lazily-imported word-pool module
     // sourcePool() is called every round and now filters ~36k words, so
     // memoise by (length band + tier set).
     this._poolCache = new Map();
@@ -27,6 +26,12 @@ export class Dictionary {
 
   async load() {
     if (this.loaded) return this;
+
+    // Dynamic import so Vite code-splits the ~300KB word pool into its own
+    // chunk, fetched only when the runtime generator is actually needed — i.e.
+    // when there's no precomputed daily set for today.
+    this._words = await import("../data/commonWords.js");
+    const { wordsForTiers } = this._words;
 
     const url = `${import.meta.env.BASE_URL}data/dictionary.txt`;
     const res = await fetch(url);
@@ -69,7 +74,7 @@ export class Dictionary {
     const cached = this._poolCache.get(key);
     if (cached) return cached;
 
-    const base = tiers ? wordsForTiers(tiers) : this.sources;
+    const base = tiers ? this._words.wordsForTiers(tiers) : this.sources;
     const pool =
       minLen <= 0 && maxLen === Infinity
         ? base
@@ -79,8 +84,8 @@ export class Dictionary {
     return pool;
   }
 
-  /** Tier ids present in the bundled pool, e.g. ["10","20","35"]. */
+  /** Tier ids present in the pool, e.g. ["10","20","35"]. Empty until load(). */
   get tiers() {
-    return Object.keys(WORDS_BY_TIER);
+    return this._words ? Object.keys(this._words.WORDS_BY_TIER) : [];
   }
 }

@@ -7,6 +7,8 @@ import "./aintaword.css";
 import { registerGame } from "../../core/registry.js";
 import { Dictionary } from "../../core/dictionary.js";
 import { AintAWordGame } from "./game.js";
+import { loadDailySet, pairsFor } from "./dailySet.js";
+import { todayKey } from "./results.js";
 
 // A dictionary can be shared across games; allow callers to pass one in, else
 // lazily create and cache a single instance here.
@@ -29,8 +31,19 @@ export default registerGame({
   accent: "#7c5cff",
 
   async mount(container, opts = {}) {
-    const dict = await getDictionary(opts);
-    const game = new AintAWordGame(container, dict, opts);
+    const day = todayKey();
+    const daily = await loadDailySet(day);
+
+    // The precomputed set contains ready-made, already-validated pairs, so the
+    // heavy assets (36k-word pool + 173k-word dictionary, ~550KB) are only
+    // fetched when there's no set for today and we must generate at runtime.
+    const dict = daily ? null : await getDictionary(opts);
+
+    const game = new AintAWordGame(container, dict, {
+      ...opts,
+      daily: daily ? day : undefined,
+      pairsFor: daily ? (id) => pairsFor(daily, id) : opts.pairsFor,
+    });
     return () => game.destroy();
   },
 });

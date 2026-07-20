@@ -4,7 +4,7 @@
 //
 //   node scripts/e2e.mjs
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { JSDOM } from "jsdom";
@@ -323,6 +323,71 @@ ok(
 
 const noLink = buildShareText({ score: 3, history: hist("111"), url: "" });
 ok(!noLink.includes("http"), "omits the link cleanly when no URL is configured");
+
+// --- precomputed daily sets ----------------------------------------------
+
+console.log("\nprecomputed daily set (no dictionary at runtime):");
+const dailyDir = path.join(dir, "../public/data/daily");
+const dayFile = readdirSync(dailyDir).filter((f) => f.endsWith(".json")).sort()[0];
+const dayData = JSON.parse(readFileSync(path.join(dailyDir, dayFile), "utf8"));
+ok(dayData.v === 1, `${dayFile} has the expected format version`);
+ok(
+  DIFFICULTY_ORDER.every((id) => Array.isArray(dayData.sets[id]) && dayData.sets[id].length === 150),
+  "150 pairs precomputed for every difficulty",
+);
+
+// Every precomputed pair must already satisfy the invariants — that's the
+// whole point of validating at build time.
+const hardPairs = dayData.sets.hard;
+ok(
+  hardPairs.every(([real]) => valid.has(real)),
+  "every precomputed 'real' word is genuinely a word",
+);
+ok(
+  hardPairs.every(([, fake]) => !valid.has(fake)),
+  "no precomputed 'fake' is accidentally a real word",
+);
+ok(
+  hardPairs.every(([real]) => real.length >= 10 && real.length <= 15),
+  "precomputed hard pairs respect the band",
+);
+
+// THE payload claim: play a full run with dict = null.
+const dailyHost = document.createElement("div");
+document.body.appendChild(dailyHost);
+const g3 = new AintAWordGame(dailyHost, null, {
+  pairsFor: (id) => dayData.sets[id],
+});
+g3.start("hard");
+const served = [];
+for (let i = 0; i < 30; i++) {
+  served.push(g3.pair.real);
+  g3.choiceEls[g3.correctSide].click();
+}
+ok(g3.score === 30, "played 30 rounds with no dictionary loaded at all");
+ok(
+  JSON.stringify(served) === JSON.stringify(hardPairs.slice(0, 30).map(([r]) => r)),
+  "words are served from the file, in file order",
+);
+
+// Placement must also be identical for everyone, not just the word order.
+function placements() {
+  const h = document.createElement("div");
+  document.body.appendChild(h);
+  const g = new AintAWordGame(h, null, { pairsFor: (id) => dayData.sets[id] });
+  g.start("hard");
+  const sides = [];
+  for (let i = 0; i < 20; i++) {
+    sides.push(g.correctSide);
+    g.choiceEls[g.correctSide].click();
+  }
+  g.destroy();
+  h.remove();
+  return sides.join("");
+}
+ok(placements() === placements(), "left/right placement is identical across players too");
+g3.destroy();
+dailyHost.remove();
 
 console.log("\nshare button on the game-over card:");
 const shareHost = document.createElement("div");

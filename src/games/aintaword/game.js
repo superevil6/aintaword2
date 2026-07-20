@@ -77,6 +77,10 @@ export class AintAWordGame {
     this.history = [];
     this.state = "playing";
     this.locked = false;
+    // Precomputed pairs for today, if available. The RNG is still used for
+    // left/right placement, so that stays identical across players too.
+    this.pairs = this.opts.pairsFor?.(this.profile.id) || null;
+    this.pairIndex = 0;
     this._hideOverlay();
     this._renderScore();
     this.timer = new Countdown({
@@ -93,6 +97,18 @@ export class AintAWordGame {
 
   _nextPair() {
     const p = this.profile;
+
+    // Precomputed path: today's pairs were generated AND validated at build
+    // time, so no dictionary or word pool is needed at runtime.
+    if (this.pairs) {
+      // 150 pairs is far past a reachable score, but wrap rather than crash if
+      // a superhuman run ever exhausts the set.
+      const [real, fake] = this.pairs[this.pairIndex++ % this.pairs.length];
+      this.pair = { real, fake, type: "daily" };
+      this._placePair();
+      return;
+    }
+
     // Fixed per run — deliberately NOT ramped by score. A score-dependent ramp
     // would give two players on the same daily seed different words.
     const band = { minLen: p.minLen, maxLen: p.maxLen, tiers: p.tiers };
@@ -114,13 +130,18 @@ export class AintAWordGame {
     if (!this.pair) {
       // Even the fallback failed — the pool must be empty or misconfigured.
       // End the run cleanly rather than throwing deep in the render path.
-      console.error(
-        `aintaword: no word pair available (difficulty "${p.id}", pool ` +
-          `${this.dict.sourcePool({ minLen: p.minLen, maxLen: p.maxLen, tiers: p.tiers }).length})`,
-      );
+      const size = this.dict?.sourcePool(band).length ?? "no dictionary loaded";
+      console.error(`aintaword: no word pair available (difficulty "${p.id}", pool ${size})`);
       this._end();
       return;
     }
+    this._placePair();
+  }
+
+  // Assign the pair to the two buttons. Placement is drawn from the same
+  // seeded RNG, so which side the real word lands on is identical for every
+  // player on today's set.
+  _placePair() {
     this.correctSide = this.rng.chance(0.5) ? 0 : 1;
     this.sides[this.correctSide] = this.pair.real;
     this.sides[1 - this.correctSide] = this.pair.fake;

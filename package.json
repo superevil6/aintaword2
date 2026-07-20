@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "words": "node scripts/build-words.mjs",
+    "daily": "node scripts/build-daily.mjs",
     "verify": "node scripts/verify.mjs",
     "e2e": "node scripts/e2e.mjs",
     "snapshot": "node scripts/snapshot.mjs",
