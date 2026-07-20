@@ -1,6 +1,14 @@
 // Site-wide configuration.
 
 /**
+ * Display name of the site, shown in the top banner on every screen.
+ *
+ * ── PLACEHOLDER ── change this once you've settled on a name. It is the only
+ * place the name appears, so renaming is a one-line change.
+ */
+export const SITE_NAME = "Word Games";
+
+/**
  * Canonical public URL of the site, used in "share your score" text.
  *
  * ── SET THIS when you have your domain, e.g. "https://aintaword.com" ──

@@ -25,8 +25,10 @@ export function mountHub(container) {
 
     hub.innerHTML = `
       <header class="hub-header">
-        <h1 class="hub-title">Word Games</h1>
-        <p class="hub-subtitle">Pick a game to play today's challenge.</p>
+        <!-- The site name lives in the persistent banner (see main.js), so this
+             heading names the task rather than repeating the brand. -->
+        <h1 class="hub-title">Choose a game</h1>
+        <p class="hub-subtitle">Today's challenge, one puzzle per difficulty.</p>
       </header>
       <ul class="hub-grid" role="list">
         ${games

@@ -306,12 +306,7 @@
   to   { box-shadow: 0 0 0 5px rgba(255,255,255,0.7); }
 }
 
-/* ── Action buttons (undo / reset) ──────────────────────────────────────── */
-
-.cp-actions {
-  display: flex;
-  gap: 0.75rem;
-}
+/* ── Action buttons (result screens) ────────────────────────────────────── */
 
 .cp-action-btn {
   padding: 0.4rem 1rem;
@@ -366,6 +361,82 @@
   opacity: 0.28;
   cursor: not-allowed;
   transform: none;
+}
+
+/* ── Backtrack dialog ───────────────────────────────────────────────────── */
+
+/* Covers the whole game shell rather than just the grid. The blur is load-
+   bearing: with the clock paused, an unobscured board would make this dialog
+   a free, untimed look at the puzzle. The banner stays outside it, so leaving
+   the game is still possible. */
+.cp-modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(8, 10, 20, 0.82);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border-radius: var(--radius);
+  animation: cp-modal-in 0.12s ease-out;
+
+  /* Tapping the dim dismisses. iOS Safari only dispatches click on a
+     non-interactive element when it looks tappable, so this cursor is
+     load-bearing on mobile, not cosmetic. */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes cp-modal-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cp-modal {
+  width: 100%;
+  max-width: 340px;
+  background: linear-gradient(180deg, var(--bg-2), #12152a);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  padding: clamp(20px, 5vw, 28px);
+  text-align: center;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  cursor: default; /* the card is not a dismiss target */
+}
+
+.cp-modal-text {
+  margin: 0 0 1.15rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.cp-modal-sub {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+}
+
+.cp-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* Comfortable thumb targets — the shared action button is sized for the
+   result screens, which are not something you tap under time pressure. */
+.cp-modal-actions .cp-action-btn {
+  flex: 1;
+  min-height: 44px;
+  max-width: 150px;
+}
+
+.cp-modal-confirm {
+  border-color: var(--good);
+  color: var(--good);
 }
 
 /* ── Win screen ──────────────────────────────────────────────────────────── */
@@ -465,8 +536,3 @@
   margin-top: 1.25rem;
 }
 
-/* The difficulty button doubles as a label for the tier in play. */
-.cp-action-btn--difficulty {
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.06em;
-}

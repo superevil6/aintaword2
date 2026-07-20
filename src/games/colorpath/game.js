@@ -43,6 +43,8 @@ export class ColorPathGame {
     this._pending  = [];   // cell indices highlighted awaiting player tap
     this._preview  = [];   // cell indices previewed under a hovered primary
     this._startTime = null;  // Timestamp when game started
+    this._pausedAt = null;   // Timestamp the clock was frozen, if paused
+    this._closeModal = null; // Closer for the open dialog, if any
     this._timerInterval = null;  // Timer update interval ID
     this._timerEl = null;  // Timer display element
     this._gameActive = false;  // Whether the game is currently in progress
@@ -59,6 +61,7 @@ export class ColorPathGame {
   }
 
   destroy() {
+    this._closeModal?.(false); // detaches its keydown listener
     this._stopTimer();
     clearTimeout(this._shareTimer);
     window.removeEventListener("resize", this._onResize);
@@ -90,8 +93,10 @@ export class ColorPathGame {
   // ── Difficulty picker ────────────────────────────────────────────────────
 
   _showSelect() {
+    this._closeModal?.(false);
     this._stopTimer();
     this._pending = [];
+    this._preview = [];
     this.root.innerHTML = "";
     this.root.className = "cp cp--select";
 
@@ -166,9 +171,11 @@ export class ColorPathGame {
 
     // A rebuild is a fresh puzzle: drop any running clock and its start stamp,
     // or "New puzzle" inherits the previous run's elapsed time.
+    this._closeModal?.(false);
     this._stopTimer();
     this._startTime = null;
     this._pending = [];
+    this._preview = [];
 
     this.root.innerHTML = "";
     this.root.className = "cp";
@@ -260,24 +267,8 @@ export class ColorPathGame {
     });
     this.root.appendChild(controls);
 
-    // Footer action — back to the picker. There is deliberately no "new
-    // puzzle": one board per tier per day, the same for every player.
-    const actions = document.createElement("div");
-    actions.className = "cp-actions";
-
-    const diffBtn = document.createElement("button");
-    diffBtn.type = "button";
-    diffBtn.className = "cp-action-btn cp-action-btn--difficulty";
-    diffBtn.textContent = `${this.profile.label} ▾`;
-    diffBtn.setAttribute(
-      "aria-label",
-      `Difficulty: ${this.profile.label}. Change difficulty.`,
-    );
-    diffBtn.addEventListener("click", () => this._showSelect());
-
-    actions.append(diffBtn);
-    this.root.appendChild(actions);
-
+    // No footer controls: the board is one puzzle per tier per day, the banner
+    // handles leaving, and the win screen offers the way back to the picker.
     this._renderState();
   }
 
@@ -363,33 +354,66 @@ export class ColorPathGame {
   // ── Backtrack modal ──────────────────────────────────────────────────────
 
   _showBacktrackModal(idx) {
+    if (this._closeModal) return; // never stack dialogs
+
     const colorName = COLOR_NAMES[this.grid.colorAt(idx)];
     const moves     = this.grid.moves;
+
+    // The clock stops and the board goes behind a blur for the same reason:
+    // an open dialog would otherwise be a free, untimed look at the grid.
+    this._pauseTimer();
+    this._clearPreview();
 
     const overlay = document.createElement("div");
     overlay.className = "cp-modal-overlay";
     overlay.innerHTML = `
-      <div class="cp-modal" role="dialog" aria-modal="true">
-        <p class="cp-modal-text">
-          Return to <strong>${escapeHtml(colorName)}</strong>?<br>
-          <span class="cp-modal-sub">Move count stays at ${moves}.</span>
+      <div class="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-modal-text">
+        <p class="cp-modal-text" id="cp-modal-text">
+          Return to <strong>${escapeHtml(colorName)}</strong>?
+          <span class="cp-modal-sub">Move count stays at ${moves}. Timer paused.</span>
         </p>
         <div class="cp-modal-actions">
-          <button class="cp-modal-cancel">Cancel</button>
-          <button class="cp-modal-confirm">Backtrack</button>
+          <button type="button" class="cp-action-btn cp-modal-cancel">Cancel</button>
+          <button type="button" class="cp-action-btn cp-modal-confirm">Backtrack</button>
         </div>
       </div>
     `;
 
-    overlay.querySelector(".cp-modal-cancel").addEventListener("click", () => {
+    let closed = false;
+    const close = (confirmed) => {
+      // Every dismissal path funnels through here — button, backdrop tap,
+      // Escape, teardown — and touch devices can deliver more than one of
+      // them for a single gesture. Collapse to a single close.
+      if (closed) return;
+      closed = true;
+      window.removeEventListener("keydown", onKey);
       overlay.remove();
-    });
-    overlay.querySelector(".cp-modal-confirm").addEventListener("click", () => {
-      overlay.remove();
-      this.grid.backtrackTo(idx);
-      this._renderState();
-    });
+      this._closeModal = null;
+      this._resumeTimer();
+      if (confirmed) {
+        this.grid.backtrackTo(idx);
+        this._renderState();
+      }
+    };
 
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close(false);
+      }
+    };
+
+    overlay.querySelector(".cp-modal-cancel")
+      .addEventListener("click", () => close(false));
+    overlay.querySelector(".cp-modal-confirm")
+      .addEventListener("click", () => close(true));
+    // Clicking the dim cancels; clicking the dialog itself must not.
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close(false);
+    });
+    window.addEventListener("keydown", onKey);
+
+    this._closeModal = close;
     this.root.appendChild(overlay);
     overlay.querySelector(".cp-modal-confirm").focus();
   }
@@ -410,7 +434,7 @@ export class ColorPathGame {
     screen.innerHTML = `
       <div class="cp-win-inner">
         <p class="cp-win-label">Solved!</p>
-        ${this._resultStats({ moves, timeMs, isRecord })}
+        ${this._resultStats({ moves, timeMs, isRecord, tier: this.profile.label })}
         ${this._resultActionsHtml()}
       </div>
     `;
@@ -504,8 +528,12 @@ export class ColorPathGame {
     box.select();
   }
 
-  /** Shared stat block for both the win overlay and a stored result. */
-  _resultStats({ moves, timeMs, isRecord }) {
+  /**
+   * Shared stat block for both the win overlay and a stored result.
+   * `tier` is only passed by the win overlay — the stored-result card already
+   * carries the difficulty as its heading.
+   */
+  _resultStats({ moves, timeMs, isRecord, tier = null }) {
     const best = bestResult(this.profile.id);
     const footer = isRecord
       ? `<p class="cp-win-record">★ New best!</p>`
@@ -518,7 +546,9 @@ export class ColorPathGame {
     return `
       <p class="cp-win-time">${formatTime(timeMs)}</p>
       <p class="cp-win-moves">${moves}</p>
-      <p class="cp-win-moves-label">move${moves === 1 ? "" : "s"}</p>
+      <p class="cp-win-moves-label">move${moves === 1 ? "" : "s"}${
+        tier ? ` on ${escapeHtml(tier)}` : ""
+      }</p>
       ${footer}
     `;
   }
@@ -538,7 +568,33 @@ export class ColorPathGame {
       clearInterval(this._timerInterval);
       this._timerInterval = null;
     }
+    this._pausedAt = null;
     this._gameActive = false;
+  }
+
+  /** Freeze the clock while a dialog is open. */
+  _pauseTimer() {
+    if (this._startTime === null || this._pausedAt !== null) return;
+    this._pausedAt = Date.now();
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+      this._timerInterval = null;
+    }
+  }
+
+  /**
+   * Resume, shifting the start stamp forward by however long we were paused.
+   * Elapsed time is derived from `_startTime`, so moving it is what actually
+   * excludes the paused span — simply restarting the interval would let the
+   * dialog count against the player.
+   */
+  _resumeTimer() {
+    if (this._pausedAt === null) return;
+    this._startTime += Date.now() - this._pausedAt;
+    this._pausedAt = null;
+    if (this._gameActive && this._timerInterval === null) {
+      this._timerInterval = setInterval(() => this._updateTimer(), 100);
+    }
   }
 
   _updateTimer() {
