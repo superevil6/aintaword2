@@ -23,6 +23,7 @@ import {
 import { buildShareText, copyToClipboard } from "./share.js";
 import { mountTutorial } from "./tutorial.js";
 import { Rng } from "../../core/rng.js";
+import { layoutFor } from "./dailySet.js";
 
 export class ColorPathGame {
   /**
@@ -240,8 +241,16 @@ export class ColorPathGame {
   // ── Setup ────────────────────────────────────────────────────────────────
 
   _build() {
-    const rng    = new Rng(this.seed);
-    const { colors, targets, obstacles } = generateGrid(this.size, this.targetCount, rng);
+    // Today's frozen board wins when it is there: it was proven solvable at
+    // build time, and using it means a later generator change cannot rewrite a
+    // day someone has already played. Generating from the seed produces the
+    // identical layout, so the fallback is not a different puzzle — it just
+    // loses that guarantee. A custom opts.seed (tests, throwaway puzzles) is
+    // never a daily, so it always generates.
+    const frozen = this.opts.seed == null ? layoutFor(this.opts.daily, this.profile.id) : null;
+    const { colors, targets, obstacles } = frozen
+      ? frozen
+      : generateGrid(this.size, this.targetCount, new Rng(this.seed));
     this.grid    = new Grid(this.size, colors, targets, obstacles);
 
     // A rebuild is a fresh puzzle: drop any running clock and its start stamp,

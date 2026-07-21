@@ -1,7 +1,7 @@
 {
   "name": "aintaword2",
   "version": "0.1.0",
-  "description": "A collection of browser word games. First game: Ain't a Word — a 60-second spot-the-real-word score attack.",
+  "description": "A collection of browser word games. First game: Ain't a Word \u2014 a 60-second spot-the-real-word score attack.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,12 +9,17 @@
     "preview": "vite preview",
     "words": "node scripts/build-words.mjs",
     "daily": "node scripts/build-daily.mjs",
+    "colorpath:daily": "node scripts/build-colorpath-daily.mjs",
+    "wordiamond": "node scripts/build-wordiamond.mjs",
+    "wordiamond:daily": "node scripts/build-wordiamond-daily.mjs",
     "verify": "node scripts/verify.mjs",
     "verify:colorpath": "node scripts/verify-colorpath.mjs",
+    "verify:wordiamond": "node scripts/verify-wordiamond.mjs",
     "e2e": "node scripts/e2e.mjs",
     "e2e:colorpath": "node scripts/e2e-colorpath.mjs",
+    "e2e:wordiamond": "node scripts/e2e-wordiamond.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "test": "npm run verify && npm run verify:colorpath && npm run e2e && npm run e2e:colorpath"
+    "test": "npm run verify && npm run verify:colorpath && npm run verify:wordiamond && npm run e2e && npm run e2e:colorpath && npm run e2e:wordiamond"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

@@ -16,6 +16,7 @@ import { mountHub } from "./hub.js";
 import { getGame } from "./core/registry.js";
 import "./games/aintaword/index.js";  // side effect: registers the game
 import "./games/colorpath/index.js"; // side effect: registers the game
+import "./games/wordiamond/index.js"; // side effect: registers the game
 
 const app = document.getElementById("app");
 

@@ -6,6 +6,7 @@
 import "./colorpath.css";
 import { registerGame } from "../../core/registry.js";
 import { ColorPathGame } from "./game.js";
+import { loadDay } from "./dailySet.js";
 
 export default registerGame({
   id:      "colorpath",
@@ -23,7 +24,11 @@ export default registerGame({
     // No difficulty is resolved here: the game opens on its own picker, the
     // same way Ain't a Word does. Passing opts.difficulty skips straight into
     // that tier, and opts.seed overrides the daily seed for tests.
-    const game = new ColorPathGame(container, opts);
+    //
+    // Today's frozen boards, if they have been generated. Best-effort: the
+    // game regenerates the same layouts from the seed when the file is absent.
+    const daily = opts.daily ?? (await loadDay());
+    const game = new ColorPathGame(container, { ...opts, daily });
     return () => game.destroy();
   },
 });

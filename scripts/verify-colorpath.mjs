@@ -26,8 +26,15 @@
 // than imported from grid.js, so the test does not validate the code against
 // itself. Pass 3 is what ties the two implementations back together.
 
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
 import { generateGrid, quadrantOf } from "../src/games/colorpath/generator.js";
 import { DIFFICULTIES } from "../src/games/colorpath/difficulty.js";
+import { dailySeedFor } from "../src/games/colorpath/results.js";
+
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 import { Grid } from "../src/games/colorpath/grid.js";
 import { WHITE } from "../src/games/colorpath/colors.js";
 import { Rng } from "../src/core/rng.js";
@@ -261,6 +268,54 @@ for (const d of tiers) {
     shapes.add(JSON.stringify([[...targets].sort((a, b) => a - b), obstacles]));
   }
   console.log(`variety: ${d.id.padEnd(7)} ${shapes.size}/${VARIETY_SEEDS} distinct layouts`);
+}
+
+// ── the frozen daily archive ──────────────────────────────────────────────
+// These files ARE the board for their date. Nothing regenerates them at
+// runtime, so a fault here ships a broken day to everyone at once — and an
+// unsolvable frozen board has no escape hatch at all.
+const dayDir = path.join(root, "public/data/colorpath");
+if (!existsSync(dayDir)) {
+  console.log("\ndaily archive: none generated yet (npm run colorpath:daily)");
+} else {
+  const files = readdirSync(dayDir).filter((f) => f.endsWith(".json")).sort();
+  let bad = 0;
+  for (const file of files) {
+    const day = file.replace(/\.json$/, "");
+    let json;
+    try {
+      json = JSON.parse(readFileSync(path.join(dayDir, file), "utf8"));
+    } catch {
+      fail("archive", day, "not valid JSON"); bad++; continue;
+    }
+    if (json.v !== 1 || json.date !== day) {
+      fail("archive", day, `bad header (v=${json.v}, date=${json.date})`); bad++; continue;
+    }
+    for (const d of tiers) {
+      const set = json.sets?.[d.id];
+      if (!set) { fail("archive", day, `missing ${d.id}`); bad++; continue; }
+      if (set.size !== d.size || set.colors?.length !== d.size * d.size) {
+        fail("archive", day, `${d.id}: wrong dimensions`); bad++; continue;
+      }
+      if (set.targets.length !== d.targetCount) {
+        fail("archive", day, `${d.id}: ${set.targets.length} targets, expected ${d.targetCount}`);
+        bad++; continue;
+      }
+      // The gate that matters: a frozen board must be finishable.
+      const { ok } = solve(set.size, set.colors, set.targets, set.obstacles);
+      if (!ok) { fail("archive", day, `${d.id}: PROVEN UNWINNABLE`); bad++; continue; }
+      // And it must match what the seed regenerates, or a missing file would
+      // hand the player a different board rather than the same one.
+      const gen = generateGrid(d.size, d.targetCount, new Rng(dailySeedFor(d.id, day)));
+      const same = JSON.stringify([gen.colors, [...gen.targets], [...gen.obstacles]]) ===
+                   JSON.stringify([set.colors, set.targets, set.obstacles]);
+      if (!same) { fail("archive", day, `${d.id}: differs from its own seed`); bad++; }
+    }
+  }
+  if (!bad) {
+    console.log(`\ndaily archive: ${files.length} days solvable and seed-consistent ` +
+      `(${files[0]?.replace(".json", "")} → ${files.at(-1)?.replace(".json", "")})`);
+  }
 }
 
 if (failures.length === 0) {
