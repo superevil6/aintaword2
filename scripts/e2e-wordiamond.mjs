@@ -27,7 +27,8 @@ for (const k of [
 const { WordiamondGame } = await import("../src/games/wordiamond/game.js");
 const data = await import("../src/data/wordiamondPuzzles.js");
 const { MODES, boardFor } = await import("../src/games/wordiamond/shapes.js");
-const { readSide, freeSlotsFor, rotateSlots } = await import("../src/games/wordiamond/ring.js");
+const { readSide, freeSlotsFor, rotateSlots, solutionRemains } =
+  await import("../src/games/wordiamond/ring.js");
 const { buildShareText } = await import("../src/games/wordiamond/share.js");
 const { clearResults, getResult, hasPlayed } = await import("../src/games/wordiamond/results.js");
 const { FRAMES, CAPTIONS } = await import("../src/games/wordiamond/tutorial.js");
@@ -304,6 +305,62 @@ section("frozen daily boards");
   ok(fallback.cells.join("") === derived.cells.join(""),
     "and with no file at all the board falls back to the identical seeded deal");
   fallback.destroy();
+}
+
+// ── a dead-end lock is marked as wrong, not merely as locked ───────────────
+// Amber says "you froze this", which is what it says for a GOOD lock too. A
+// player had to read the sentence underneath to tell a useful lock from one
+// that has ended their run.
+section("dead-end locks");
+{
+  clearResults();
+  const g = mount({ mode: "medium" });
+  const board = g.board;
+
+  // Hunt the reachable space for a lock that is valid but strands the player.
+  // Roughly half of all locks do, so this finds one quickly.
+  const free = freeSlotsFor(board, new Set([g.given]));
+  const movable = board.sides.map((_, i) => i).filter((i) => free[i].length >= 2);
+  const seen = new Set([g.cells.join("")]);
+  const queue = [g.cells];
+  let trap = null;
+  for (let head = 0; head < queue.length && !trap && head < 4000; head++) {
+    const cur = queue[head];
+    for (let si = 0; si < board.n && !trap; si++) {
+      if (si === g.given || !g.words.has(readSide(board, cur, si))) continue;
+      if (!solutionRemains(board, cur, new Set([g.given, si]), g.words)) trap = { cur, si };
+    }
+    for (const si of movable) {
+      const slots = free[si];
+      for (let step = 1; step < slots.length; step++) {
+        const next = rotateSlots(cur, slots, step);
+        const key = next.join("");
+        if (!seen.has(key)) { seen.add(key); queue.push(next); }
+      }
+    }
+  }
+
+  ok(trap !== null, "found a real word whose lock rules out every solution");
+  if (trap) {
+    g.cells = trap.cur;
+    g._toggleLock(trap.si);
+    ok(g.stranded, "locking it is recognised as a dead end");
+
+    const deadTiles = board.sides[trap.si].slots.map((sl) => g.tiles[sl]);
+    ok(deadTiles.every((t) => t.classList.contains("is-stranded")),
+      "every letter of that side is marked wrong");
+    ok(deadTiles.every((t) => !t.classList.contains("is-locked")),
+      "and not merely as locked — the two states must not look alike");
+    ok(g.el.message.classList.contains("is-error"),
+      "the explanation is styled as an error");
+    ok(g.lockBtns[trap.si].dataset.state === "stranded", "the lock itself says so too");
+
+    g._toggleLock(trap.si);
+    ok(!g.stranded && g.tiles.every((t) => !t.classList.contains("is-stranded")),
+      "unlocking clears the warning everywhere");
+  }
+  g.destroy();
+  clearResults();
 }
 
 // ── a released drag settles without replaying itself ───────────────────────

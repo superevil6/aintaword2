@@ -33,16 +33,37 @@ for (const [len, flat] of Object.entries(WORDS)) {
 }
 
 // ── shipped word lists match the dictionary they claim to come from ────────
+// The shipped list is the FAMILIAR pool, not the whole dictionary: a board that
+// lights up for KEPS offers a lock the player has no way to judge. Rebuild it
+// from the same sources the generator uses, so the two cannot drift apart.
 section("word lists");
 const dictionary = readFileSync(path.join(root, "public/data/dictionary.txt"), "utf8").split(/\s+/);
+function familiarOfLength(len) {
+  const valid = new Set(dictionary.filter((w) => w.length === len));
+  const out = new Set();
+  for (const tier of ["10", "20"]) {
+    for (const variant of ["english", "american"]) {
+      const file = path.join(root, `scripts/data/scowl/${variant}-words.${tier}`);
+      for (const line of readFileSync(file, "latin1").split(/\r?\n/)) {
+        const w = line.trim().toLowerCase();
+        if (w.length === len && /^[a-z]+$/.test(w) && valid.has(w)) out.add(w);
+      }
+    }
+  }
+  return out;
+}
 for (const [len, set] of Object.entries(wordSets)) {
-  const expect = new Set(dictionary.filter((w) => w.length === Number(len)));
+  const expect = familiarOfLength(Number(len));
+  const inDict = new Set(dictionary.filter((w) => w.length === Number(len)));
   if (set.size !== expect.size) {
-    fail(`${len}-letter list has ${set.size} entries, dictionary has ${expect.size}`);
+    fail(`${len}-letter list has ${set.size} entries, the familiar pool has ${expect.size}`);
   } else if ([...set].some((w) => !expect.has(w))) {
-    fail(`${len}-letter list contains a word not in the dictionary`);
+    fail(`${len}-letter list contains a word outside the familiar pool`);
+  } else if ([...set].some((w) => !inDict.has(w))) {
+    fail(`${len}-letter list contains a word not in the dictionary at all`);
   } else {
-    console.log(`  ✓ ${set.size} ${len}-letter words, matching the dictionary`);
+    console.log(`  ✓ ${set.size} ${len}-letter familiar words ` +
+      `(of ${inDict.size} in the dictionary — the rest would light up unrecognisably)`);
   }
 }
 

@@ -191,7 +191,7 @@ for (const mode of MODES) {
   const rings = enumerateRings(board, familiar, 2);
   console.log(`   distinct rings found: ${rings.length.toLocaleString()}`);
 
-  const byEnds = indexWords(valid);
+  const byEnds = indexWords(familiar);
   const stride = Math.max(1, Math.floor(rings.length / COUNT));
   const chosen = [];
   for (let i = 0; i < rings.length && chosen.length < COUNT; i += stride) {
@@ -199,7 +199,7 @@ for (const mode of MODES) {
     // The given side is fixed here so its ring count can be too.
     const given = Math.floor(mulberry32(chosen.length * 104729 + 17)() * board.n);
     const cells = cellsFromWords(board, words);
-    const count = countRings(board, cells, given, new Set(valid), byEnds);
+    const count = countRings(board, cells, given, new Set(familiar), byEnds);
     chosen.push([words.join(" "), given, count]);
   }
 
@@ -214,12 +214,22 @@ for (const mode of MODES) {
   emitted[mode.id] = chosen;
 }
 
-// The win check needs a dictionary at runtime, because a player who lands a
-// DIFFERENT valid ring has genuinely won. Length-filtering keeps that to a few
-// KB rather than the 443KB full list.
+// The win check needs a word list at runtime, because a player who lands a
+// DIFFERENT valid ring has genuinely won.
+//
+// It ships the FAMILIAR pool, not the full dictionary. Measured on the square,
+// two thirds of the sides that lit up under the full ENABLE list held a word
+// nobody knows — KEPS, DAWS, SABE — because ENABLE is 76% unfamiliar at four
+// letters and 84% at five. A board that lights up for a word the player cannot
+// recognise is not being generous, it is being noisy: it offers a lock they
+// have no way to evaluate, and hands out wins that feel like accidents.
+//
+// The cost is real and worth stating: a player who forms a genuinely valid but
+// obscure word is told nothing. That is the trade — every light means
+// something, at the price of a few unrewarded discoveries.
 const wordLists = {};
 for (const len of [...lengths].sort()) {
-  wordLists[len] = wordsOfLength(len).valid.join("");
+  wordLists[len] = wordsOfLength(len).familiar.join("");
 }
 
 const fmt = (rows) =>
@@ -243,7 +253,11 @@ export const POOLS = {
 ${MODES.map((m) => `  ${m.id}: ${fmt(emitted[m.id])},`).join("\n")}
 };
 
-/** Every valid word of each length used, concatenated. Split to rebuild. */
+/**
+ * Every word the win check accepts, by length, concatenated. Split to rebuild.
+ * This is the FAMILIAR pool, not the full dictionary — see build-wordiamond.mjs
+ * for why a board that lights up for KEPS is worse than one that does not.
+ */
 export const WORDS = {
 ${[...lengths].sort().map((len) => `  ${len}: ${JSON.stringify(wordLists[len])},`).join("\n")}
 };

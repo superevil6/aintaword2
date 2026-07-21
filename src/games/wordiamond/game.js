@@ -454,10 +454,25 @@ export class WordiamondGame {
     });
     const givenSlots = new Set(this.board.sides[this.given].slots);
 
+    // The sides whose locks have ruled out every solution. Amber alone said
+    // "you froze this", which is the same thing it says for a perfectly good
+    // lock — the player had to read the sentence underneath to tell a useful
+    // lock from a dead end. Red says wrong.
+    const deadSlots = new Set();
+    if (this.stranded) {
+      this.locked.forEach((i) => {
+        if (i !== this.given) this.board.sides[i].slots.forEach((sl) => deadSlots.add(sl));
+      });
+    }
+
     this.tiles.forEach((tile, s) => {
       tile.classList.toggle("is-word", wordSlots.has(s));
-      tile.classList.toggle("is-locked", pinned.has(s) && !givenSlots.has(s));
+      // Mutually exclusive: a tile is locked OR stranded, never both. Letting
+      // them overlap made the rendering depend on CSS source order, which is
+      // exactly the kind of thing that survives review and breaks later.
+      tile.classList.toggle("is-locked", pinned.has(s) && !givenSlots.has(s) && !deadSlots.has(s));
       tile.classList.toggle("is-given", givenSlots.has(s));
+      tile.classList.toggle("is-stranded", deadSlots.has(s));
     });
     this.el.board.classList.toggle("is-won", this.won);
 
@@ -511,6 +526,7 @@ export class WordiamondGame {
       const chip = document.createElement("span");
       chip.className = "wd-chip" +
         (i === this.given ? " is-given"
+          : this.stranded && this.locked.has(i) ? " is-stranded"
           : this.locked.has(i) ? " is-locked"
           : lit[i] ? " is-word" : "");
       chip.textContent = `${side.label} ${readSide(this.board, this.cells, i)}`;
@@ -560,6 +576,7 @@ export class WordiamondGame {
       return;
     }
 
+    this.el.message.classList.toggle("is-error", this.stranded);
     if (this.stranded) {
       const names = [...this.locked]
         .filter((i) => i !== this.given)

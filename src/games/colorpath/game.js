@@ -125,7 +125,7 @@ export class ColorPathGame {
     label.className = "cp-toggle";
     label.innerHTML = `
       <input type="checkbox" class="cp-toggle-box">
-      <span class="cp-toggle-text">Colorblind-friendly colors</span>
+      <span class="cp-toggle-text">CVT-friendly colors</span>
     `;
     const box = label.querySelector(".cp-toggle-box");
     box.checked = paletteId() === "cvd";

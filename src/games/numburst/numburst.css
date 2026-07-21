@@ -1,0 +1,284 @@
+/* Numburst — SCAFFOLDING styles.
+ *
+ * Enough structure to play with the mechanic and no more. Borrows the shape of
+ * colorpath.css (card, picker, hud) without borrowing its polish, so that when
+ * the mechanic proves out, this file gets replaced rather than extended. */
+
+.nb {
+  --nb-accent: #ff8a3d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+/* ── Difficulty picker ──────────────────────────────────────────────────── */
+
+.nb-card {
+  max-width: 34rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.nb-card-title {
+  margin: 0;
+  font-size: 1.75rem;
+  color: var(--nb-accent);
+}
+
+.nb-card-lede,
+.nb-rules {
+  margin: 0;
+  color: var(--fg-dim);
+  line-height: 1.5;
+}
+
+.nb-rules {
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.nb-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.nb-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #ffffff1f;
+  border-radius: var(--radius);
+  background: #ffffff0a;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nb-pick:hover,
+.nb-pick:focus-visible {
+  border-color: var(--nb-accent);
+  background: #ffffff14;
+}
+
+.nb-pick.is-done { opacity: 0.75; }
+
+.nb-pick-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nb-pick-label { font-weight: 600; }
+
+.nb-pick-blurb,
+.nb-pick-sub {
+  font-size: 0.82rem;
+  color: var(--fg-dim);
+}
+
+.nb-pick-spec {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.nb-pick-big {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--nb-accent);
+}
+
+/* ── HUD ────────────────────────────────────────────────────────────────── */
+
+.nb-hud {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.nb-hud-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nb-hud-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.nb-hud-stat > span:last-child {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Field ──────────────────────────────────────────────────────────────── */
+
+/* Square by construction so the percentage-positioned orbs stay circular and
+ * the layout never has to be recomputed on resize. */
+.nb-field {
+  position: relative;
+  width: min(90vw, 34rem);
+  aspect-ratio: 1;
+  /* Numerals are sized in cqw against this box — see _renderOrbs. */
+  container-type: inline-size;
+  border: 1px solid #ffffff14;
+  border-radius: var(--radius);
+  background: radial-gradient(circle at 50% 45%, #ffffff0d, transparent 70%);
+}
+
+/* Fill hue comes from --nb-hue, set per orb in game.js from its CURRENT value.
+ * Lightness and chroma are fixed so only the hue moves: every orb is equally
+ * bright, white numerals stay legible from blue through red, and no value
+ * needs a special-cased text colour. The plain-colour declaration first is the
+ * fallback for anything without oklch. */
+.nb-orb {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  --nb-hue: 210;
+  border: 2px solid #ffffff40;
+  background: #2b3350;
+  background: oklch(0.52 0.13 var(--nb-hue));
+  border-color: oklch(0.72 0.17 var(--nb-hue));
+  color: #fff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 90ms ease, border-color 120ms ease;
+}
+
+.nb-orb:hover:not(:disabled),
+.nb-orb:focus-visible {
+  border-color: #fff;
+  transform: scale(1.06);
+  z-index: 1;
+}
+
+/* Damaged but alive. The orb keeps its original SIZE while its hue has already
+ * dropped to its current value, so a wounded orb is self-evidently too big for
+ * its colour. The dashed ring is a second, quieter marker for anyone reading
+ * shape before colour — it no longer needs to be alarm-red to do that job. */
+.nb-orb.is-hurt {
+  border-style: dashed;
+  border-color: #ffffff8c;
+}
+
+.nb-orb.is-dead {
+  opacity: 0.12;
+  border-style: dotted;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Bomb tray ──────────────────────────────────────────────────────────── */
+
+.nb-tray {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.nb-bomb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 3.5rem;
+  padding: 0.5rem 0.75rem;
+  --nb-hue: 210;
+  border: 2px solid #ffffff24;
+  border-color: oklch(0.72 0.17 var(--nb-hue) / 0.55);
+  border-radius: var(--radius);
+  background: #ffffff0a;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Armed reads as "filled with its own colour" rather than as the site accent,
+ * so the chip you picked and the orbs it can kill outright are the same hue. */
+.nb-bomb.is-armed {
+  border-color: oklch(0.72 0.17 var(--nb-hue));
+  background: oklch(0.52 0.13 var(--nb-hue) / 0.45);
+}
+
+.nb-bomb:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.nb-bomb-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.nb-bomb-count {
+  font-size: 0.75rem;
+  color: var(--fg-dim);
+}
+
+/* ── Chrome ─────────────────────────────────────────────────────────────── */
+
+.nb-btn {
+  padding: 0.55rem 1rem;
+  border: 1px solid #ffffff24;
+  border-radius: var(--radius);
+  background: #ffffff0a;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nb-btn:hover,
+.nb-btn:focus-visible { border-color: var(--nb-accent); }
+
+.nb-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 1.5rem;
+  border: 1px solid var(--nb-accent);
+  border-radius: var(--radius);
+  background: #ffffff0d;
+  text-align: center;
+}
+
+.nb-done-score {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--nb-accent);
+}
+
+.nb-done-score small {
+  font-size: 1rem;
+  color: var(--fg-dim);
+}
+
+.nb-done-note {
+  margin: 0;
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+}

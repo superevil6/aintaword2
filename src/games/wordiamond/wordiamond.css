@@ -155,6 +155,21 @@
   cursor: default;
 }
 
+/* A lock that has ruled out every solution.
+ *
+ * Red AND dashed. Red-on-green is exactly the pair that disappears under the
+ * commonest colour blindness, so the border's SHAPE carries the warning too —
+ * a dashed edge reads as provisional whatever you can see of the hue.
+ *
+ * is-locked and is-stranded are mutually exclusive in game.js, so this does not
+ * rely on source order to beat the amber treatment. */
+.wd-tile.is-stranded {
+  border: 1px dashed var(--bad);
+  background-color: color-mix(in srgb, var(--bad) 14%, transparent);
+  box-shadow: none;
+  color: var(--bad);
+}
+
 /* The one solid tile on the board. */
 .wd-tile.is-given {
   background-color: var(--wd-given);
@@ -237,14 +252,16 @@
   background: var(--wd-word-soft);
 }
 
-.wd-lock[data-state="locked"],
-.wd-lock[data-state="stranded"] {
+.wd-lock[data-state="locked"] {
   color: var(--wd-lock);
   border-color: var(--wd-lock);
   background: var(--wd-lock-soft);
 }
 
 .wd-lock[data-state="stranded"] {
+  color: var(--bad);
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 16%, transparent);
   border-style: dashed;
   animation: wd-nudge 420ms ease-in-out 1;
 }
@@ -400,6 +417,12 @@
   border-color: var(--wd-lock);
 }
 
+.wd-chip.is-stranded {
+  color: var(--bad);
+  border-color: var(--bad);
+  border-style: dashed;
+}
+
 .wd-chip.is-given {
   color: var(--wd-given-ink);
   background: var(--wd-given);
@@ -453,6 +476,11 @@
   line-height: 1.5;
   color: var(--wd-lock);
   max-width: 46ch;
+}
+
+/* A dead end is an error, not a caution — matched to the tiles it describes. */
+.wd-message.is-error {
+  color: var(--bad);
 }
 
 .wd-note {

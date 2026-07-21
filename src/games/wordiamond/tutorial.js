@@ -22,20 +22,26 @@
 //     c1                col  = corner c1 c2
 //     c2
 //
-// ATC / ABU -> rotate row -> CAT / CBU -> lock CAT -> swap the column's two
-// free letters -> CUB. Every intermediate state is checked against the real
-// dictionary (see the demo words test in scripts/e2e-wordiamond.mjs) so no
+// ATC / AWO -> rotate row -> CAT / CWO -> lock CAT -> swap the column's two
+// free letters -> COW. Every intermediate state is checked against the word
+// list the game actually ships (see the demo test in e2e-wordiamond.mjs) so no
 // accidental word lights up mid-lesson and teaches the wrong thing.
+//
+// Those words are constrained twice over: they must be FAMILIAR, since the win
+// check only accepts familiar words, and no intermediate arrangement may be
+// one. An earlier version used CUB, which is in the dictionary but not in the
+// familiar pool — the demo would have shown a word lighting up that the real
+// board refuses.
 
 const ROW = [0, 1, 2];
 const COL = [0, 3, 4];
 
 /** Each frame is the board as the player would see it at that beat. */
 export const FRAMES = [
-  { cells: ["a", "t", "c", "b", "u"], locked: false },
-  { cells: ["c", "a", "t", "b", "u"], locked: false },
-  { cells: ["c", "a", "t", "b", "u"], locked: true },
-  { cells: ["c", "a", "t", "u", "b"], locked: true },
+  { cells: ["a", "t", "c", "w", "o"], locked: false },
+  { cells: ["c", "a", "t", "w", "o"], locked: false },
+  { cells: ["c", "a", "t", "w", "o"], locked: true },
+  { cells: ["c", "a", "t", "o", "w"], locked: true },
 ];
 
 export const CAPTIONS = [
@@ -108,7 +114,7 @@ export function mountTutorial(container) {
       const inRow = ROW.includes(i);
       const inCol = COL.includes(i);
       const rowWord = frame.cells[0] + frame.cells[1] + frame.cells[2] === "cat";
-      const colWord = frame.cells[0] + frame.cells[3] + frame.cells[4] === "cub";
+      const colWord = frame.cells[0] + frame.cells[3] + frame.cells[4] === "cow";
       tile.classList.toggle("is-word", (inRow && rowWord) || (inCol && colWord));
       tile.classList.toggle("is-locked", frame.locked && inRow);
     });
