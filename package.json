@@ -12,8 +12,9 @@
     "verify": "node scripts/verify.mjs",
     "verify:colorpath": "node scripts/verify-colorpath.mjs",
     "e2e": "node scripts/e2e.mjs",
+    "e2e:colorpath": "node scripts/e2e-colorpath.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "test": "npm run verify && npm run verify:colorpath && npm run e2e"
+    "test": "npm run verify && npm run verify:colorpath && npm run e2e && npm run e2e:colorpath"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

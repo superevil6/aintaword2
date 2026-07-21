@@ -2,7 +2,10 @@
 // CSS imports is what lets scripts/e2e.mjs drive it under jsdom.
 import { Grid } from "./grid.js";
 import { generateGrid } from "./generator.js";
-import { COLOR_HEX, COLOR_NAMES, PRIMARIES, primaryAdds } from "./colors.js";
+import {
+  COLOR_NAMES, PRIMARIES, PALETTE_EVENT,
+  colorHex, paintSwatch, paletteId, pipsMarkup, primaryAdds, primaryHex, setPalette,
+} from "./colors.js";
 import {
   DIFFICULTIES,
   DIFFICULTY_ORDER,
@@ -58,6 +61,13 @@ export class ColorPathGame {
     this._onResize = () => this._renderArrows();
     window.addEventListener("resize", this._onResize);
 
+    // The palette toggle can be flipped from the picker or from the board, so
+    // repainting is driven by the event rather than by whoever owns the
+    // checkbox. Mid-game this repaints in place: no remount, no lost focus,
+    // and the run keeps going.
+    this._onPalette = () => this._repaintPalette();
+    window.addEventListener(PALETTE_EVENT, this._onPalette);
+
     if (opts.difficulty) this.start(opts.difficulty);
     else this._showSelect();
   }
@@ -68,6 +78,7 @@ export class ColorPathGame {
     this._stopTimer();
     clearTimeout(this._shareTimer);
     window.removeEventListener("resize", this._onResize);
+    window.removeEventListener(PALETTE_EVENT, this._onPalette);
     this.root.classList.remove("cp", "cp--select");
     this.root.innerHTML = "";
     document.documentElement.style.removeProperty("--cp-player-color");
@@ -99,6 +110,40 @@ export class ColorPathGame {
     this.root.classList.toggle("cp--select", select);
   }
 
+  /**
+   * The colourblind-palette checkbox. Mounted on both the picker and the
+   * board: the board is where you find out you cannot read the circles, so
+   * making you leave the run to fix it would be the wrong trade.
+   *
+   * Deliberately worded as a colour swap rather than an accessibility mode —
+   * the pips are on for everyone either way, so this switch only decides which
+   * eight fills you get.
+   */
+  _paletteToggle() {
+    const label = document.createElement("label");
+    label.className = "cp-toggle";
+    label.innerHTML = `
+      <input type="checkbox" class="cp-toggle-box">
+      <span class="cp-toggle-text">Colorblind-friendly colors</span>
+    `;
+    const box = label.querySelector(".cp-toggle-box");
+    box.checked = paletteId() === "cvd";
+    box.addEventListener("change", () => setPalette(box.checked ? "cvd" : "classic"));
+    return label;
+  }
+
+  /**
+   * Redraw everything that reads a hex out of the palette. Cheap enough to do
+   * wholesale — it is a board of circles and three buttons — and doing it
+   * wholesale is what keeps a half-swapped board from being possible.
+   */
+  _repaintPalette() {
+    for (const box of this.root.querySelectorAll(".cp-toggle-box")) {
+      box.checked = paletteId() === "cvd";
+    }
+    if (this.grid && this._cells.length) this._renderState();
+  }
+
   /** Stop the picker demo's loop; safe to call when it isn't mounted. */
   _teardownTutorial() {
     this._tutorialCleanup?.();
@@ -126,7 +171,7 @@ export class ColorPathGame {
     card.className = "cp-card";
     card.innerHTML = `
       <h1 class="cp-card-title">Color Path</h1>
-      <p class="cp-card-lede">Every circle is red, yellow and blue mixed together. White is none of them.</p>
+      <p class="cp-card-lede">Every circle is red, yellow and blue mixed together. White is none of them. The three dots on a circle spell out which primaries it holds &mdash; red, yellow, blue, left to right.</p>
     `;
 
     // The demo covers add/remove/step and the trail recolouring, so the written
@@ -187,6 +232,7 @@ export class ColorPathGame {
     }
 
     card.appendChild(list);
+    card.appendChild(this._paletteToggle());
     this.root.appendChild(card);
     firstBtn?.focus();
   }
@@ -257,11 +303,13 @@ export class ColorPathGame {
       if (this.grid.isObstacle(idx)) {
         cell.setAttribute("aria-label", "Obstacle");
         cell.style.setProperty("--cell-color", "#1a1a1a");
-        cell.dataset.originalColor = "#1a1a1a";
       } else {
         cell.setAttribute("aria-label", COLOR_NAMES[colors[idx]]);
-        cell.style.setProperty("--cell-color", COLOR_HEX[colors[idx]]);
-        cell.dataset.originalColor = COLOR_HEX[colors[idx]];
+        // The pips live in the cell and are repainted in place, so build them
+        // once here rather than re-writing innerHTML every render.
+        cell.innerHTML = pipsMarkup(colors[idx]);
+        cell.dataset.baseColor = colors[idx];
+        paintSwatch(cell, colors[idx]);
       }
 
       if (idx === 0) cell.classList.add("cp-cell--current");
@@ -277,12 +325,20 @@ export class ColorPathGame {
     // Primary buttons
     const controls = document.createElement("div");
     controls.className = "cp-controls";
-    this._primaryBtns = PRIMARIES.map(({ bit, name, hex }) => {
+    this._primaryBtns = PRIMARIES.map(({ bit, name }, i) => {
       const btn = document.createElement("button");
       btn.className = "cp-primary";
       btn.dataset.bit = bit;
+      btn.dataset.primary = i;
       btn.setAttribute("aria-label", name);
-      btn.style.setProperty("--primary-color", hex);
+      // Sign plus the pip slot this button owns: which of the three dots on the
+      // circles it flips, in the same left-to-right order. A player who cannot
+      // read the button's colour can still read which column it drives.
+      btn.innerHTML = `
+        <span class="cp-primary-sign">+</span>
+        ${pipsMarkup(bit)}
+        <span class="cp-primary-name">${name}</span>
+      `;
       btn.addEventListener("click", () => this._onPrimaryClick(bit));
 
       // Preview where this primary would land you. Teaching the colour rule by
@@ -296,6 +352,7 @@ export class ColorPathGame {
       return btn;
     });
     this.root.appendChild(controls);
+    this.root.appendChild(this._paletteToggle());
 
     // No footer controls: the board is one puzzle per tier per day, the banner
     // handles leaving, and the win screen offers the way back to the picker.
@@ -643,7 +700,6 @@ export class ColorPathGame {
     this._collectedEl.textContent = `${grid.collected.size} / ${grid.targets.size}`;
 
     // Cell states
-    const currentColor = COLOR_HEX[grid.currentColor];
     for (let idx = 0; idx < this.size * this.size; idx++) {
       const cell = this._cells[idx];
       cell.classList.toggle("cp-cell--current",  idx === grid.currentIndex);
@@ -655,12 +711,13 @@ export class ColorPathGame {
       cell.classList.toggle("cp-cell--pending", this._pending.includes(idx));
       cell.classList.toggle("cp-cell--preview", this._preview.includes(idx));
       
-      // Visited cells show the current player color
-      if (grid.isVisited(idx) && idx !== grid.currentIndex && !grid.isObstacle(idx)) {
-        cell.style.setProperty("--cell-color", currentColor);
-      } else {
-        cell.style.setProperty("--cell-color", cell.dataset.originalColor);
-      }
+      // Visited cells show the current player color — pips included, so the
+      // trail spells out what you are carrying as well as showing it.
+      if (grid.isObstacle(idx)) continue;
+      const shown = grid.isVisited(idx) && idx !== grid.currentIndex
+        ? grid.currentColor
+        : Number(cell.dataset.baseColor);
+      paintSwatch(cell, shown);
     }
 
     // Primary buttons stay put and grey out when unusable. Hiding them shifted
@@ -672,8 +729,12 @@ export class ColorPathGame {
 
       btn.hidden   = false;
       btn.disabled = targets.length === 0;
+      // Re-applied every render rather than once at build, so a palette swap
+      // mid-game carries the controls along with the board.
+      btn.style.setProperty("--primary-color", primaryHex(Number(btn.dataset.primary)));
       const adds   = primaryAdds(grid.currentColor, bit);
-      btn.textContent = adds ? "+" : "−";
+      btn.querySelector(".cp-primary-sign").textContent = adds ? "+" : "−";
+      btn.classList.toggle("cp-primary--removes", !adds);
       btn.classList.toggle("cp-primary--backtracks",
         targets.some(t => grid.isVisited(t)));
     }
@@ -681,7 +742,7 @@ export class ColorPathGame {
     // Background tint tracks current color
     document.documentElement.style.setProperty(
       "--cp-player-color",
-      COLOR_HEX[grid.currentColor],
+      colorHex(grid.currentColor),
     );
 
     // Arrows
@@ -709,7 +770,7 @@ export class ColorPathGame {
       const x2 = toRect.left   + toRect.width    / 2 - wrapperRect.left;
       const y2 = toRect.top    + toRect.height   / 2 - wrapperRect.top;
 
-      const segmentColor = COLOR_HEX[this.grid.colorAt(trail[i])];
+      const segmentColor = colorHex(this.grid.colorAt(trail[i]));
 
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
       line.setAttribute("x1", x1);

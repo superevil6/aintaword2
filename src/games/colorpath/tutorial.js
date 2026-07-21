@@ -9,7 +9,10 @@
 // player holds after 0, 1, 2 and 3 presses — so one array describes both the
 // circles and the walk.
 
-import { WHITE, BLUE, GREEN, YELLOW, COLOR_HEX, PRIMARIES, primaryAdds } from "./colors.js";
+import {
+  WHITE, BLUE, GREEN, YELLOW, PRIMARIES, PALETTE_EVENT,
+  paintSwatch, pipsMarkup, primaryAdds, primaryHex,
+} from "./colors.js";
 
 const NODES = [WHITE, BLUE, GREEN, YELLOW];
 
@@ -20,9 +23,9 @@ const STEPS = [
 ];
 
 const CAPTIONS = [
-  "You start on white — none of the primaries.",
-  "Add blue. You step across, and your trail takes your colour.",
-  "Add yellow. Blue and yellow make green.",
+  "You start on white — all three dots empty, none of the primaries.",
+  "Add blue. Its dot fills, you step across, and your trail takes your colour.",
+  "Add yellow. Blue and yellow make green — two dots lit.",
   "Remove blue. Green without blue leaves yellow.",
 ];
 
@@ -55,14 +58,16 @@ export function mountTutorial(container) {
         // reads as "get to that one" rather than an abstract colour exercise.
         const isGoal = i === NODES.length - 1;
         return `<span class="cp-demo-slot">
-          <span class="cp-demo-node${isGoal ? " is-goal" : ""}"></span>
+          <span class="cp-demo-node${isGoal ? " is-goal" : ""}">${pipsMarkup(NODES[i])}</span>
           ${isGoal ? `<span class="cp-demo-goal-label">Grab me!</span>` : ""}
         </span>`;
       }).join("")}
     </div>
     <div class="cp-demo-controls">
       ${PRIMARIES.map(
-        (p) => `<span class="cp-demo-btn" data-bit="${p.bit}" style="--primary-color: ${p.hex}"></span>`,
+        (p, i) => `<span class="cp-demo-btn" data-bit="${p.bit}" style="--primary-color: ${primaryHex(i)}">
+          <span class="cp-demo-sign"></span>${pipsMarkup(p.bit)}
+        </span>`,
       ).join("")}
     </div>
     <p class="cp-demo-caption"></p>
@@ -74,24 +79,29 @@ export function mountTutorial(container) {
   const caption = el.querySelector(".cp-demo-caption");
 
   let timer = null;
+  let shownStep = 0; // last frame drawn, so a palette swap can redraw it
   const after = (ms, fn) => { timer = setTimeout(fn, ms); };
 
   function render(step) {
+    shownStep = step;
     const playerColor = NODES[step];
     nodes.forEach((node, i) => {
       // Everything up to and including the player wears the player's colour;
       // circles still ahead keep their own.
       const shown = i <= step ? playerColor : NODES[i];
-      node.style.setProperty("--demo-color", COLOR_HEX[shown]);
+      paintSwatch(node, shown);
       node.classList.toggle("is-current", i === step);
       node.classList.toggle("is-trail", i < step);
     });
 
-    for (const btn of btns) {
+    btns.forEach((btn, i) => {
       const bit = Number(btn.dataset.bit);
-      btn.textContent = primaryAdds(playerColor, bit) ? "+" : "−";
+      const adds = primaryAdds(playerColor, bit);
+      btn.style.setProperty("--primary-color", primaryHex(i));
+      btn.querySelector(".cp-demo-sign").textContent = adds ? "+" : "−";
+      btn.classList.toggle("is-removes", !adds);
       btn.classList.remove("is-pressed");
-    }
+    });
 
     caption.textContent = CAPTIONS[step];
   }
@@ -111,6 +121,12 @@ export function mountTutorial(container) {
     });
   }
 
+  // Under reduced motion nothing redraws on its own, so the palette toggle
+  // sitting right below this demo would otherwise leave it stranded on the
+  // old colours.
+  const onPalette = () => render(shownStep);
+  window.addEventListener(PALETTE_EVENT, onPalette);
+
   if (prefersReducedMotion()) {
     render(0); // static first frame; the rules list explains the rest
   } else {
@@ -118,6 +134,7 @@ export function mountTutorial(container) {
   }
 
   return () => {
+    window.removeEventListener(PALETTE_EVENT, onPalette);
     clearTimeout(timer);
     timer = null;
     el.remove();

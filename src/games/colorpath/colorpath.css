@@ -83,10 +83,11 @@
 }
 
 .cp-demo-node {
+  position: relative; /* holds the pips */
   width: clamp(26px, 8vw, 34px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--demo-color, #888);
+  background: var(--cell-color, #888);
   border: 2px solid transparent;
   /* Slow enough to read as "the trail is changing colour" rather than a flicker. */
   transition: background-color 0.35s ease, box-shadow 0.25s ease,
@@ -140,7 +141,10 @@
   aspect-ratio: 1;
   border-radius: 50%;
   display: grid;
-  place-items: center;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  --cell-ink: var(--primary-color);
   border: 2px solid var(--primary-color);
   background: color-mix(in srgb, var(--primary-color) 18%, var(--bg-2));
   color: #fff;
@@ -336,6 +340,7 @@
 }
 
 .cp-cell {
+  position: relative; /* holds the pips and the collected tick */
   border-radius: 50%;
   background: var(--cell-color, #888);
   border: 2.5px solid transparent;
@@ -344,6 +349,45 @@
   /* make it square so border-radius: 50% gives a circle */
   aspect-ratio: 1;
   padding: 0;
+}
+
+/* ── RYB pips ─────────────────────────────────────────────────────────────
+ *
+ * Three slots per circle — red, yellow, blue, left to right — filled when the
+ * circle contains that primary. Hue is the fast read but it is not a reliable
+ * one: half this palette sits on the red-green axis, so to a dichromat Orange
+ * and Brown and Green are a guess. The pips are the reading that always works,
+ * and they double as a rule sheet for everyone else, since the mix a circle is
+ * made of is now countable rather than remembered.
+ *
+ * Everything sizes in percent so one rule covers a 6x6 board, an 8x8 one, and
+ * the demo circles on the picker.
+ */
+.cp-pips {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10%;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.cp-pip {
+  flex: 0 0 auto;
+  width: 17%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid var(--cell-ink, #14161f);
+  background: transparent;
+  opacity: 0.5;
+  transition: background-color 0.18s ease, opacity 0.18s ease;
+}
+
+.cp-pip.is-on {
+  background: var(--cell-ink, #14161f);
+  opacity: 0.92;
 }
 
 .cp-cell:hover {
@@ -389,9 +433,15 @@
   }
 }
 
-/* Burned (visited, not current) — dimmed so player can see their trail */
-.cp-cell--burned {
-  opacity: 0.35;
+/* Burned (visited, not current) — dimmed so the player can see their trail.
+ *
+ * Named --burned while the controller has only ever set --visited, so this
+ * rule matched nothing and the trail sat at full strength: a block of circles
+ * all wearing the player's colour, indistinguishable from live board. Pushing
+ * it back is the cue that says "behind you" without spending a hue on it.
+ * 0.45 rather than the old 0.35 so the pips stay legible in the trail. */
+.cp-cell--visited {
+  opacity: 0.45;
   cursor: default;
 }
 
@@ -411,12 +461,33 @@
   to   { box-shadow: 0 0 11px 3px rgba(255, 255, 255, 0.34); }
 }
 
-/* Collected target — pulse replaced by a steady dim glow */
+/* Collected target — pulse replaced by a steady dim glow.
+ *
+ * The green ring says "done" only if you can see green, so a tick takes over
+ * the middle of the circle. The pips step aside for it: a collected circle is
+ * history, and what it was mixed from stopped mattering the moment you took it. */
 .cp-cell--collected {
-  opacity: 0.45;
+  opacity: 0.55;
   border-color: var(--good);
   box-shadow: 0 0 8px 2px color-mix(in srgb, var(--good) 50%, transparent);
   animation: none;
+}
+
+.cp-cell--collected .cp-pips {
+  opacity: 0;
+}
+
+.cp-cell--collected::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(11px, 2.6vw, 18px);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--cell-ink, #14161f);
+  pointer-events: none;
 }
 
 /* Obstacle — impassable cell */
@@ -451,6 +522,44 @@
 @keyframes cp-pulse {
   from { box-shadow: 0 0 0 3px rgba(255,255,255,0.3); }
   to   { box-shadow: 0 0 0 5px rgba(255,255,255,0.7); }
+}
+
+/* ── Palette toggle ──────────────────────────────────────────────────────── */
+
+/* Quiet by design. It sits under the controls on the board, where it must not
+   compete with them for attention, but it still has to be findable by someone
+   who has just realised they cannot read the circles — so it brightens on
+   hover and focus rather than hiding until you go looking. */
+.cp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.1rem;
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.12s;
+}
+
+.cp-toggle:hover,
+.cp-toggle:focus-within {
+  color: var(--fg);
+}
+
+.cp-toggle-box {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--good);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+/* On the picker it is a card footer rather than a control in a row. */
+.cp-card .cp-toggle {
+  justify-content: center;
+  margin-top: 0.2rem;
 }
 
 /* ── Action buttons (result screens) ────────────────────────────────────── */
@@ -492,12 +601,53 @@
   border: 3px solid var(--primary-color);
   background: color-mix(in srgb, var(--primary-color) 18%, var(--bg-2));
   color: white;
-  font-size: clamp(1.4rem, 5vw, 2rem);
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.15s;
   --result-color: transparent;
+  /* Stacked so the button says the same thing three ways: the sign, the pip
+     slot it flips, and the colour's name. Only one of those needs your hue
+     discrimination to be intact. */
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  --cell-ink: var(--primary-color);
 }
+
+.cp-primary-sign {
+  font-size: clamp(1.2rem, 4.2vw, 1.7rem);
+  line-height: 1;
+}
+
+.cp-primary-name {
+  font-size: clamp(0.58rem, 1.9vw, 0.7rem);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+/* Off the board the pips are a label, not an overlay: they lay out in flow at
+   a fixed size instead of scaling to a circle. */
+.cp-primary .cp-pips,
+.cp-demo-btn .cp-pips {
+  position: static;
+  inset: auto;
+  gap: 3px;
+}
+
+/* A button that would REMOVE its primary draws its own pip hollow: the glyph
+   previews the state the circle's pip is about to be left in, so "+ / −" is
+   not the only thing carrying add-versus-remove. */
+.cp-primary--removes .cp-pip.is-on,
+.cp-demo-btn.is-removes .cp-pip.is-on {
+  background: transparent;
+  opacity: 0.55;
+}
+
+.cp-primary .cp-pip { width: 7px; }
+.cp-demo-btn .cp-pip { width: 5px; border-width: 1px; }
 
 .cp-primary:not(:disabled):hover {
   background: color-mix(in srgb, var(--primary-color) 32%, var(--bg-2));
