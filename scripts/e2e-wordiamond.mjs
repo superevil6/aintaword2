@@ -30,6 +30,7 @@ const { MODES, boardFor } = await import("../src/games/wordiamond/shapes.js");
 const { readSide, freeSlotsFor, rotateSlots } = await import("../src/games/wordiamond/ring.js");
 const { buildShareText } = await import("../src/games/wordiamond/share.js");
 const { clearResults, getResult, hasPlayed } = await import("../src/games/wordiamond/results.js");
+const { FRAMES, CAPTIONS } = await import("../src/games/wordiamond/tutorial.js");
 
 let pass = 0, fail = 0;
 const ok = (cond, msg) => {
@@ -39,9 +40,17 @@ const ok = (cond, msg) => {
 const section = (name) => console.log(`\n${name}:`);
 
 const host = () => document.getElementById("app");
+
+// The picker runs a looping demo, so every instance MUST be destroyed. jsdom
+// keeps the process alive while any timer is pending, so an abandoned game
+// hangs this script after it reports rather than failing it — which is far
+// worse than a failure, because `npm test` never returns.
+let current = null;
 const mount = (opts = {}) => {
+  current?.destroy();
   host().innerHTML = "";
-  return new WordiamondGame(host(), data, { day: "2026-07-21", ...opts });
+  current = new WordiamondGame(host(), data, { day: "2026-07-21", ...opts });
+  return current;
 };
 
 // Every mode-level test below deals a fresh board, so results must not leak
@@ -92,6 +101,58 @@ cards[1].click();
 ok(game.mode?.id === "medium", "clicking an option starts that mode");
 ok(host().querySelector(".wd-board"), "and the board appears");
 game.destroy();
+
+// ── the picker demo ────────────────────────────────────────────────────────
+// Locking is the technique that makes the game solvable, so the demo is the
+// only place most players will ever learn it exists.
+section("picker demo");
+{
+  clearResults();
+  const g = mount();
+  const demo = host().querySelector(".wd-demo");
+  ok(demo !== null, "the demo mounts on the picker");
+  ok(demo.getAttribute("aria-hidden") === "true",
+    "and is hidden from screen readers — the rules carry the same information");
+  ok(demo.querySelectorAll(".wd-demo-tile").length === 5,
+    "five tiles: a row and a column sharing their corner");
+  ok(demo.querySelector(".wd-demo-lock") !== null, "with a lock to demonstrate");
+
+  // An explanation has to arrive before the choice it explains.
+  const picker = host().querySelector(".wd-picker");
+  const kids = [...picker.children];
+  const demoAt = kids.findIndex((n) => n.contains(demo) || n === demo);
+  const listAt = kids.findIndex((n) => n.classList.contains("wd-modes"));
+  ok(demoAt >= 0 && listAt >= 0 && demoAt < listAt,
+    "and sits above the difficulty list, not below it");
+
+  // The lesson only works if the words behave as claimed. A stray valid word
+  // in an intermediate frame would light green and teach the wrong thing.
+  const flat = data.WORDS[3];
+  const w3 = new Set();
+  for (let i = 0; i < flat.length; i += 3) w3.add(flat.slice(i, i + 3));
+  const rowOf = (c) => c[0] + c[1] + c[2];
+  const colOf = (c) => c[0] + c[3] + c[4];
+  ok(!w3.has(rowOf(FRAMES[0].cells)) && !w3.has(colOf(FRAMES[0].cells)),
+    "the demo starts with neither side reading a word");
+  ok(w3.has(rowOf(FRAMES[1].cells)) && !w3.has(colOf(FRAMES[1].cells)),
+    "rotating the row makes exactly one word");
+  ok(!FRAMES[1].locked && FRAMES[2].locked, "which is then locked");
+  ok(w3.has(rowOf(FRAMES[3].cells)) && w3.has(colOf(FRAMES[3].cells)),
+    "and the locked corner lets the column finish without breaking it");
+  ok(rowOf(FRAMES[2].cells) === rowOf(FRAMES[3].cells),
+    "the locked row is untouched by the column's turn");
+  ok(FRAMES.every((f) => f.cells.length === 5), "every frame describes all five cells");
+  ok(CAPTIONS.length === FRAMES.length, "every frame has a caption");
+  // Same letters throughout: the demo rotates, it does not swap in new ones.
+  const letters = (f) => [...f.cells].sort().join("");
+  ok(FRAMES.every((f) => letters(f) === letters(FRAMES[0])),
+    "and every frame is a rearrangement of the same five letters");
+
+  g.start("easy");
+  ok(host().querySelector(".wd-demo") === null, "the demo is torn down on entering a mode");
+  g.destroy();
+  clearResults();
+}
 
 // ── every mode, end to end ─────────────────────────────────────────────────
 for (const mode of MODES) {
@@ -342,6 +403,10 @@ ok(host().querySelectorAll("[data-mode]").length === MODES.length,
   "\"Change difficulty\" returns to the picker");
 game.destroy();
 ok(host().innerHTML === "", "destroy() empties the container");
+
+// Anything still holding a timer would keep node alive past the report.
+current?.destroy();
+current = null;
 
 console.log("");
 if (fail) {

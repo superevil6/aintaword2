@@ -8,6 +8,7 @@ import {
 } from "./ring.js";
 import { buildShareText, copyToClipboard } from "./share.js";
 import { getResult, hasPlayed, saveResult } from "./results.js";
+import { mountTutorial } from "./tutorial.js";
 import { hashSeed, mulberry32 } from "../../core/rng.js";
 import { todayKey } from "../../core/daily.js";
 
@@ -67,6 +68,7 @@ export class WordiamondGame {
 
     this._onResize = () => this._fit();
     this._copyTimer = null;
+    this._tutorialCleanup = null;
     window.addEventListener("resize", this._onResize);
 
     if (opts.mode) this.start(opts.mode);
@@ -76,7 +78,14 @@ export class WordiamondGame {
   destroy() {
     window.removeEventListener("resize", this._onResize);
     if (this._copyTimer) clearTimeout(this._copyTimer);
+    this._teardownTutorial();
     this.root.innerHTML = "";
+  }
+
+  /** Stops the picker demo's looping timer. Safe to call when none is running. */
+  _teardownTutorial() {
+    this._tutorialCleanup?.();
+    this._tutorialCleanup = null;
   }
 
   get day() {
@@ -92,15 +101,13 @@ export class WordiamondGame {
    * shortest solution by about one move for triple the shuffling. See MODES.
    */
   showPicker() {
+    this._teardownTutorial();
     this.el = null;
     this.tiles = [];
     this.root.innerHTML = `
       <div class="wd wd-picker">
         <h2 class="wd-picker-title">Wordiamond</h2>
-        <p class="wd-picker-sub">
-          Words share their corner letters. Rotate one side and two others
-          move with it.
-        </p>
+        <div data-el="demoSlot"></div>
         <ul class="wd-modes" role="list">
           ${MODES.map((m) => {
             // A mode already played today reads back what you did rather than
@@ -129,6 +136,12 @@ export class WordiamondGame {
     this.root.querySelectorAll("[data-mode]").forEach((btn) => {
       btn.addEventListener("click", () => { this.start(btn.dataset.mode); });
     });
+
+    // Above the difficulty list, not below it: the demo is the explanation, so
+    // it has to arrive before the choice it is explaining. It also replaces the
+    // subtitle that used to sit here — that sentence and the demo's first
+    // caption said the same thing, and the demo says it better.
+    this._tutorialCleanup = mountTutorial(this.root.querySelector('[data-el="demoSlot"]'));
   }
 
   /**
@@ -137,6 +150,7 @@ export class WordiamondGame {
    * screen rather than two that can drift apart.
    */
   showResult(result) {
+    this._teardownTutorial();
     const ring = result.ring.join(" · ");
     this.root.innerHTML = `
       <div class="wd wd-done">
@@ -175,6 +189,7 @@ export class WordiamondGame {
   }
 
   start(modeId) {
+    this._teardownTutorial();
     this.mode = getMode(modeId);
     this.board = boardFor(this.mode);
     // Already finished today? Show what happened rather than dealing again.

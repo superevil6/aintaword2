@@ -487,6 +487,7 @@
   letter-spacing: -0.02em;
 }
 
+/* Retired with the picker subtitle — the demo's first caption says it. */
 .wd-picker-sub {
   margin: 0;
   max-width: 34ch;
@@ -616,4 +617,119 @@
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--fg-dim);
+}
+
+
+/* ── picker demo ─────────────────────────────────────────────────────────── */
+/* An L of five tiles: a row and a column sharing their corner. Small enough to
+   sit under the difficulty list, big enough to show that moving one side moves
+   the other's first letter too. */
+
+.wd-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.wd-demo-board {
+  --demo-cell: clamp(30px, 9vw, 40px);
+  --demo-gap: 4px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, var(--demo-cell));
+  grid-template-rows: repeat(3, var(--demo-cell));
+  gap: var(--demo-gap);
+}
+
+/* The L: row across the top, column down the left, sharing cell 0. */
+.wd-demo-tile[data-cell="0"] { grid-area: 1 / 1; }
+.wd-demo-tile[data-cell="1"] { grid-area: 1 / 2; }
+.wd-demo-tile[data-cell="2"] { grid-area: 1 / 3; }
+.wd-demo-tile[data-cell="3"] { grid-area: 2 / 1; }
+.wd-demo-tile[data-cell="4"] { grid-area: 3 / 1; }
+
+.wd-demo-tile {
+  display: grid;
+  place-items: center;
+  background: var(--bg-2);
+  background-image: conic-gradient(
+    from 45deg,
+    rgba(255, 255, 255, 0.08) 0deg 90deg,
+    rgba(0, 0, 0, 0.10) 90deg 180deg,
+    rgba(0, 0, 0, 0.16) 180deg 270deg,
+    rgba(255, 255, 255, 0.04) 270deg 360deg
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  color: var(--fg);
+  font-size: calc(var(--demo-cell) * 0.44);
+  font-weight: 700;
+}
+
+/* Same three signals the real board uses, so the demo is not teaching its own
+   vocabulary: green reads a word, amber is frozen by the player. */
+.wd-demo-tile.is-word {
+  border-color: var(--wd-word);
+  background-color: var(--wd-word-soft);
+  color: var(--wd-word);
+}
+
+.wd-demo-tile.is-locked {
+  border-color: var(--wd-lock);
+  box-shadow: inset 0 0 0 2px var(--wd-lock-soft);
+}
+
+.wd-demo-tile.is-sliding {
+  transition: transform 380ms cubic-bezier(0.3, 0.7, 0.3, 1), opacity 380ms ease;
+}
+
+/* The lock sits off the end of the row it belongs to. */
+.wd-demo-lock {
+  position: absolute;
+  top: 0;
+  left: calc(var(--demo-cell) * 3 + var(--demo-gap) * 2 + 8px);
+  width: var(--demo-cell);
+  height: var(--demo-cell);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: var(--fg-dim);
+  opacity: 0.35;
+  transition: color 0.25s, border-color 0.25s, background-color 0.25s, opacity 0.25s;
+}
+
+.wd-demo-lock svg { width: 55%; height: 55%; display: block; }
+
+/* Offered the moment the row reads a word, taken once it is locked. */
+.wd-demo-lock.is-ready {
+  opacity: 1;
+  color: var(--wd-word);
+  border-color: var(--wd-word);
+}
+
+.wd-demo-lock.is-on {
+  opacity: 1;
+  color: var(--wd-lock);
+  border-color: var(--wd-lock);
+  background: var(--wd-lock-soft);
+}
+
+.wd-demo-caption {
+  margin: 0;
+  min-height: 2.6em;
+  max-width: 34ch;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--fg-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wd-demo-tile,
+  .wd-demo-lock {
+    transition: none;
+  }
 }
