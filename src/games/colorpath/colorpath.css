@@ -3,6 +3,11 @@
 /* ── Root shell ──────────────────────────────────────────────────────────── */
 
 .cp {
+  /* Goal marker. Gold rather than a board colour on purpose: the eight cell
+     colours are the game's vocabulary, so a ninth hue reads as "not one of
+     these" — a label rather than another mixable colour. */
+  --cp-goal: #ffcc4d;
+
   position: relative; /* anchors the win overlay and the difficulty picker */
   width: 100%;
   max-width: 560px;
@@ -99,6 +104,22 @@
 .cp-demo-node.is-goal:not(.is-current) {
   border-color: rgba(255, 255, 255, 0.75);
   animation: cp-target-pulse 1.8s ease-in-out infinite alternate;
+}
+
+/* The tutorial teaches the marker, not just the glow — otherwise the board
+   introduces a symbol the demo never showed. */
+.cp-demo-node.is-goal:not(.is-current)::before {
+  content: "★";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(14px, 3.4vw, 22px);
+  line-height: 1;
+  color: var(--cp-goal);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.65);
+  opacity: 0.92;
+  pointer-events: none;
 }
 
 .cp-demo-goal-label {
@@ -456,9 +477,46 @@
   animation: cp-target-pulse 1.8s ease-in-out infinite alternate;
 }
 
+/* A star marks a goal, so the glow is never the only thing saying so.
+ *
+ * The pulse is a poor sole carrier: it is motion, which reduced-motion settings
+ * switch off; it is a white halo, which reads differently against eight cell
+ * colours; and it is easiest to miss exactly when the board is busiest. A shape
+ * in the middle of the circle is none of those things.
+ *
+ * It sits BEHIND the pips rather than replacing them — the pips are the
+ * colourblind reading of what a cell is mixed from, and a goal still needs to
+ * be mixed to. Dark ink on gold keeps them legible. */
+.cp-cell--target::before {
+  content: "★";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(18px, 5vw, 34px);
+  line-height: 1;
+  color: var(--cp-goal);
+  /* Gold on eight different cell colours needs its own edge to sit on. */
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.65),
+    0 1px 1px rgba(0, 0, 0, 0.45);
+  opacity: 0.92;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cp-cell--target .cp-pips {
+  z-index: 1;
+}
+
 @keyframes cp-target-pulse {
   from { box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.14); }
   to   { box-shadow: 0 0 11px 3px rgba(255, 255, 255, 0.34); }
+}
+
+/* Once collected the star has done its job and the tick takes the middle. */
+.cp-cell--collected::before {
+  content: none;
 }
 
 /* Collected target — pulse replaced by a steady dim glow.
@@ -688,6 +746,8 @@
       0 0 40px 18px rgba(255, 255, 255, 0.22);
   }
 
+  /* The pulse is gone here, which is precisely when the star matters most:
+     without it a goal would be a slightly brighter ring and nothing else. */
   .cp-cell--target {
     box-shadow: 0 0 11px 3px rgba(255, 255, 255, 0.34);
   }
