@@ -45,6 +45,101 @@
   font-size: 0.9rem;
 }
 
+/* ── Picker demo ─────────────────────────────────────────────────────────── */
+
+.nb-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem auto 0.5rem;
+  width: min(15rem, 70%);
+}
+
+.nb-demo-field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  container-type: inline-size;
+  border: 1px solid #ffffff14;
+  border-radius: var(--radius);
+  background: radial-gradient(circle at 50% 45%, #ffffff0d, transparent 70%);
+  overflow: visible;
+}
+
+.nb-demo-orb {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid oklch(0.72 0.17 var(--nb-hue));
+  background: oklch(0.52 0.13 var(--nb-hue));
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(0.5rem, 8cqw, 1.1rem);
+  line-height: 1;
+  transition: opacity 220ms ease;
+}
+
+/* Positioned by left/top, so the burst can animate scale without fighting a
+ * per-frame transform the way the live board must. */
+.nb-demo-orb.is-bursting {
+  animation: nb-demo-burst 240ms ease-out forwards;
+  z-index: 2;
+}
+
+@keyframes nb-demo-burst {
+  0%   { scale: 1;    }
+  45%  { scale: 1.4;  }
+  100% { scale: 0.15; }
+}
+
+.nb-demo-orb.is-dead {
+  opacity: 0;
+}
+
+.nb-demo-arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.nb-demo-arrow line {
+  stroke-dasharray: 1;
+  animation: nb-dart 620ms ease-out forwards;
+}
+
+.nb-demo-float {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  font-size: clamp(0.55rem, 7cqw, 1rem);
+  color: #fff;
+  text-shadow: 0 1px 3px #000, 0 0 8px #000;
+  animation: nb-float 760ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.nb-demo-score {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.nb-demo-pts {
+  font-size: 1.35rem;
+  color: var(--nb-accent);
+}
+
+.nb-demo-caption {
+  margin: 0;
+  min-height: 2.4em;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  line-height: 1.3;
+}
+
 .nb-picker {
   display: flex;
   flex-direction: column;
@@ -164,13 +259,20 @@
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  transition: transform 90ms ease, border-color 120ms ease;
+  /* Positioned by an inline `transform`, so keep it out of the transition —
+   * animating it here would fight the per-frame writes during a collapse. */
+  left: 0;
+  top: 0;
+  transition: scale 90ms ease, border-color 120ms ease;
 }
 
+/* No scale on hover. This is a phone game first, where there is no hover at
+ * all, and on a densely packed board nudging an orb bigger shoves it visually
+ * over its neighbours — it reads as the board twitching rather than as a
+ * highlight. The ring alone marks the target, and it costs no layout. */
 .nb-orb:hover:not(:disabled),
 .nb-orb:focus-visible {
   border-color: #fff;
-  transform: scale(1.06);
   z-index: 1;
 }
 
@@ -184,10 +286,143 @@
 }
 
 .nb-orb.is-dead {
-  opacity: 0.12;
-  border-style: dotted;
+  opacity: 0;
   cursor: default;
   pointer-events: none;
+}
+
+/* The burst.
+ *
+ * Animates the standalone `scale` property, NOT a transform. Position is
+ * written as an inline `transform: translate(...)` that changes every frame
+ * during a collapse, and a keyframe touching `transform` would overwrite it —
+ * orbs would snap to the field's top-left corner as they popped. `scale` is
+ * its own property and composes with the translate instead of replacing it.
+ *
+ * Runs on the compositor, which is what lets it keep playing smoothly while
+ * the main thread is busy computing the collapse behind it. */
+@keyframes nb-burst {
+  0%   { scale: 1;    opacity: 1; }
+  45%  { scale: 1.45; opacity: 0.95; }
+  100% { scale: 0.15; opacity: 0; }
+}
+
+.nb-orb.is-bursting {
+  animation: nb-burst var(--nb-burst-ms, 240ms) ease-out forwards;
+  border-color: #fff;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Impact effects ─────────────────────────────────────────────────────── */
+
+/* Board-coordinate overlay: its viewBox matches the board's own units, so
+ * arrows are drawn straight from orb centres and scale with the field. */
+.nb-fx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* The dart. pathLength="1" is set on each line, so one dash animation draws
+ * any arrow at the same rate no matter how far it actually reaches. */
+.nb-arrow {
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  filter: drop-shadow(0 0 0.4px rgba(0, 0, 0, 0.8));
+  animation: nb-dart 620ms ease-out forwards;
+}
+
+@keyframes nb-dart {
+  0%   { stroke-dashoffset: 1; opacity: 0.95; }
+  40%  { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* The floating damage number. Animates the standalone `translate` property so
+ * it composes with the centring `transform` rather than replacing it. */
+.nb-float {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 1px 3px #000, 0 0 8px #000;
+  animation: nb-float 760ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes nb-float {
+  0%   { translate: 0 0;       opacity: 0; }
+  12%  { translate: 0 -0.3rem; opacity: 1; }
+  70%  { opacity: 1; }
+  100% { translate: 0 -2.6rem; opacity: 0; }
+}
+
+/* The chain multiplier, announced over the middle of the wave that earned it.
+ * Louder than a damage number on purpose — this is the payoff the whole game
+ * is pointed at, so it should be the biggest thing on screen for a moment. */
+.nb-combo {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  animation: nb-combo 900ms cubic-bezier(0.15, 0.8, 0.25, 1) forwards;
+}
+
+.nb-combo-x {
+  font-size: clamp(1.4rem, 7cqw, 3rem);
+  font-weight: 900;
+  color: var(--nb-accent);
+  text-shadow: 0 2px 6px #000, 0 0 14px #000;
+}
+
+.nb-combo-pts {
+  font-size: clamp(0.7rem, 3cqw, 1.2rem);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px #000, 0 0 10px #000;
+}
+
+@keyframes nb-combo {
+  0%   { translate: 0 0;       scale: 0.5; opacity: 0; }
+  18%  { translate: 0 -0.4rem; scale: 1.15; opacity: 1; }
+  32%  { scale: 1; }
+  75%  { opacity: 1; }
+  100% { translate: 0 -3.2rem; scale: 1; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-combo { animation: none; opacity: 0; }
+}
+
+/* Locked while a shot resolves. Pointer events are killed on the whole board
+ * rather than per orb, so there is no window where a half-settled pile is
+ * still clickable — the reason for the lock in the first place. */
+.nb.is-busy .nb-field,
+.nb.is-busy .nb-tray {
+  pointer-events: none;
+}
+
+.nb.is-busy .nb-tray { opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-orb { transition: none; }
+  .nb-orb.is-bursting { animation: none; }
+  /* Arrows and floating numbers are never created under reduced motion (see
+   * _playWaves), but belt and braces in case one is mid-flight when the
+   * setting is flipped. */
+  .nb-arrow, .nb-float { animation: none; opacity: 0; }
 }
 
 /* ── Bomb tray ──────────────────────────────────────────────────────────── */
@@ -265,11 +500,29 @@
   text-align: center;
 }
 
+.nb-done-round {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
 .nb-done-score {
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
   color: var(--nb-accent);
+}
+
+/* Beating par turns the panel border and score green — a clear, quiet win
+ * signal without a modal or a sound. */
+.nb-done.is-win {
+  border-color: var(--good);
+}
+
+.nb-done.is-win .nb-done-score {
+  color: var(--good);
 }
 
 .nb-done-score small {
@@ -281,4 +534,30 @@
   margin: 0;
   color: var(--fg-dim);
   font-size: 0.85rem;
+}
+
+.nb-done-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+/* The share button leads, tinted with the accent so it reads as the primary
+ * action; "Play again" sits beside it in the plain button style. */
+.nb-btn-share {
+  border-color: var(--nb-accent);
+  background: color-mix(in srgb, var(--nb-accent) 20%, transparent);
+}
+
+.nb-share-box {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #ffffff24;
+  border-radius: var(--radius);
+  background: #0000004d;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8rem;
+  resize: none;
 }

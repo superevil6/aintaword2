@@ -12,14 +12,19 @@
     "colorpath:daily": "node scripts/build-colorpath-daily.mjs",
     "wordiamond": "node scripts/build-wordiamond.mjs",
     "wordiamond:daily": "node scripts/build-wordiamond-daily.mjs",
+    "photonfinish:daily": "node scripts/build-photonfinish-daily.mjs",
+    "numburst:daily": "node scripts/build-numburst-daily.mjs",
     "verify": "node scripts/verify.mjs",
     "verify:colorpath": "node scripts/verify-colorpath.mjs",
     "verify:wordiamond": "node scripts/verify-wordiamond.mjs",
+    "verify:share": "node scripts/verify-share.mjs",
+    "verify:photonfinish": "node scripts/verify-photonfinish.mjs",
     "e2e": "node scripts/e2e.mjs",
     "e2e:colorpath": "node scripts/e2e-colorpath.mjs",
     "e2e:wordiamond": "node scripts/e2e-wordiamond.mjs",
+    "e2e:photonfinish": "node scripts/e2e-photonfinish.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "test": "npm run verify && npm run verify:colorpath && npm run verify:wordiamond && npm run e2e && npm run e2e:colorpath && npm run e2e:wordiamond"
+    "test": "npm run verify && npm run verify:colorpath && npm run verify:wordiamond && npm run verify:share && npm run verify:photonfinish && npm run e2e && npm run e2e:colorpath && npm run e2e:wordiamond && npm run e2e:photonfinish"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

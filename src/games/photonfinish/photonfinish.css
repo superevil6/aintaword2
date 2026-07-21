@@ -1,0 +1,624 @@
+/* Photon Finish — SCAFFOLDING styles.
+ *
+ * Borrows the shape of numburst.css (card, picker, hud, foot) without
+ * borrowing polish it hasn't earned, so that when the mechanic proves out this
+ * file gets replaced rather than extended.
+ *
+ * The board itself is one SVG in the puzzle's own 0..100 coordinate space, so
+ * every stroke width below is in BOARD UNITS, not pixels — 0.5 means half a
+ * percent of the board's width, and it scales with the viewport for free. */
+
+.pf {
+  --pf-accent: #4ad9e4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+.pf:focus {
+  outline: none;
+}
+
+/* ── Difficulty picker ──────────────────────────────────────────────────── */
+
+.pf-card {
+  max-width: 34rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pf-card-title {
+  margin: 0;
+  font-size: 1.75rem;
+  color: var(--pf-accent);
+}
+
+.pf-card-lede,
+.pf-rules {
+  margin: 0;
+  color: var(--fg-dim);
+  line-height: 1.5;
+}
+
+.pf-rules {
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.pf-rules strong {
+  color: var(--fg);
+}
+
+/* ── Picker demo ─────────────────────────────────────────────────────────── */
+
+.pf-demo {
+  margin: 0.25rem 0 0.4rem;
+  padding: 0.6rem 0.7rem 0.5rem;
+  border: 1px solid #232842;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 40%, #10142a 0%, #0a0c16 75%);
+}
+
+.pf-demo-stage {
+  display: block;
+}
+
+.pf-demo-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}
+
+.pf-demo-caption {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  color: var(--fg-dim);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  min-height: 2.3em; /* two lines, so the layout does not jump as captions change */
+}
+
+.pf-building {
+  color: var(--pf-accent);
+}
+
+.pf-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.pf-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #2a2f4d;
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pf-pick:hover {
+  border-color: var(--pf-accent);
+}
+
+.pf-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pf-pick.is-done {
+  border-color: color-mix(in srgb, var(--good) 45%, #2a2f4d);
+}
+
+.pf-pick-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pf-pick-label {
+  font-weight: 600;
+}
+
+.pf-pick-blurb,
+.pf-pick-sub {
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+}
+
+.pf-pick-spec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pf-pick-big {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--pf-accent);
+  line-height: 1;
+}
+
+/* ── HUD ────────────────────────────────────────────────────────────────── */
+
+.pf-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(100%, 40rem);
+}
+
+.pf-targets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pf-target {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #2a2f4d;
+  border-radius: 999px;
+  background: var(--bg-2);
+  font-size: 0.85rem;
+}
+
+.pf-target.is-met {
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 14%, var(--bg-2));
+}
+
+.pf-target-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+
+.pf-target-tick {
+  color: var(--good);
+  font-weight: 700;
+  width: 0.8rem;
+}
+
+.pf-hud-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.pf-hud-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-dim);
+}
+
+.pf-moves {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* ── Board ──────────────────────────────────────────────────────────────── */
+
+.pf-stage {
+  width: min(100%, 40rem);
+}
+
+.pf-board {
+  display: block;
+  cursor: crosshair; /* the whole board aims — say so before it is clicked */
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  border: 1px solid #262b45;
+  /* Nearly black rather than the app background: this is a darkroom, and the
+   * beams have to be the brightest thing on the screen by a clear margin. */
+  background:
+    radial-gradient(circle at 50% 45%, #131730 0%, #0a0c16 70%);
+  touch-action: none; /* drag-to-aim must not scroll the page */
+}
+
+/* ── Gates ──────────────────────────────────────────────────────────────── */
+
+/* A gate is short and local — something you thread a beam through, not a line
+ * across the field. The + / - glyph carries the meaning; the brightness of the
+ * bar only reinforces it, because on a near-black board "dark" cannot be shown
+ * by drawing something darker. */
+.pf-gate-bar {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.pf-gate.is-light .pf-gate-bar { stroke: #e9eeff; opacity: 0.85; }
+.pf-gate.is-dark  .pf-gate-bar { stroke: #6a76a0; opacity: 0.95; stroke-dasharray: 2 1.4; }
+
+.pf-gate-disc {
+  fill: #0d1018;
+  stroke-width: 0.45;
+}
+.pf-gate.is-light .pf-gate-disc { stroke: #e9eeff; }
+.pf-gate.is-dark  .pf-gate-disc { stroke: #6a76a0; }
+
+.pf-gate-sign {
+  font-size: 4px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-family: var(--font);
+  user-select: none;
+}
+.pf-gate.is-light .pf-gate-sign { fill: #e9eeff; }
+.pf-gate.is-dark  .pf-gate-sign { fill: #96a2c8; }
+
+.pf-mirror {
+  stroke: #cfd8f5;
+  stroke-width: 0.65;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.pf-mirror-body {
+  stroke: #8fa3d8;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  opacity: 0.18;
+}
+
+/* ── Brightness badges ──────────────────────────────────────────────────── */
+
+.pf-badge-disc {
+  stroke: #0a0c16;
+  stroke-width: 0.4;
+}
+
+.pf-badge-num {
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-family: var(--font);
+  user-select: none;
+}
+
+/* ── Finish lines ───────────────────────────────────────────────────────── */
+
+.pf-goal-band {
+  stroke: #7c88ad;
+  stroke-width: 6.5;
+  opacity: 0.12;
+  stroke-linecap: round;
+}
+
+.pf-goal {
+  stroke: #aab5d8;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+.pf-goal-hatch {
+  stroke: #0d1018;
+  stroke-width: 2;
+  stroke-dasharray: 1.3 1.3;
+  stroke-linecap: butt;
+  opacity: 0.6;
+}
+
+.pf-goal-post {
+  stroke: #aab5d8;
+  stroke-width: 0.75;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.pf-goalgate.is-met .pf-goal {
+  stroke: var(--good);
+  opacity: 1;
+  filter: drop-shadow(0 0 1.8px var(--good));
+}
+
+.pf-goalgate.is-met .pf-goal-band {
+  stroke: var(--good);
+  opacity: 0.26;
+}
+
+.pf-goal-tickdisc {
+  fill: #0a0c16;
+  stroke: var(--good);
+  stroke-width: 0.5;
+}
+
+.pf-goal-tick {
+  fill: var(--good);
+  font-size: 3.6px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-family: var(--font);
+  user-select: none;
+}
+
+/* ── Beams ──────────────────────────────────────────────────────────────── */
+
+/* Stroke and width are set per segment from the brightness — see levels.js.
+ * What stays here is only what does not vary. */
+.pf-beam {
+  stroke-linecap: round;
+}
+
+.pf-beam-glow {
+  stroke-linecap: round;
+  filter: blur(0.7px);
+}
+
+.pf-bounce {
+  fill: #cfd8f5;
+  stroke: #0a0c16;
+  stroke-width: 0.3;
+  opacity: 0.5;
+}
+
+.pf-bounce.is-selected { opacity: 0.9; }
+
+/* Where the beams cross. This is the mechanic the board turns on, so it is
+ * marked whether or not it changed anything — "they touched here and nothing
+ * happened" is a thing the player needs to be able to see. */
+.pf-couple {
+  fill: none;
+  stroke: rgba(180, 195, 255, 0.4);
+  stroke-width: 0.35;
+  stroke-dasharray: 0.9 0.7;
+}
+
+.pf-couple.is-live {
+  stroke: var(--pf-accent);
+  stroke-width: 0.6;
+  stroke-dasharray: none;
+}
+
+/* ── Emitters ───────────────────────────────────────────────────────────── */
+
+.pf-emitter {
+  cursor: grab;
+}
+
+.pf-emitter:focus-visible {
+  outline: none;
+}
+
+.pf-emitter:focus-visible .pf-orb-disc {
+  stroke: var(--accent);
+  stroke-width: 1.1;
+}
+
+/* Every emitter carries its ring, so the board plainly has things on it that
+ * turn. The selected one is brighter rather than uniquely present. */
+.pf-dial {
+  fill: none;
+  stroke: rgba(160, 180, 255, 0.16);
+  stroke-width: 0.18;
+  stroke-dasharray: 1.2 1.2;
+}
+
+.pf-dial.is-selected {
+  fill: rgba(120, 140, 255, 0.05);
+  stroke: rgba(160, 180, 255, 0.32);
+  stroke-width: 0.22;
+  stroke-dasharray: none;
+}
+
+/* The drag handle riding the ring. With free aim there are no notches to
+ * draw, so the ring's only jobs are to say "this turns" and to give the drag
+ * a visible track. */
+.pf-dial-handle {
+  fill: rgba(180, 195, 255, 0.45);
+  stroke: #0a0c16;
+  stroke-width: 0.2;
+}
+
+.pf-dial-handle.is-selected {
+  fill: var(--pf-accent);
+  stroke-width: 0.25;
+}
+
+.pf-barrel {
+  stroke: #f4f7ff;
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+/* Outlined in the board's own background, because the label sits wherever the
+ * emitter happens to be and a beam will sooner or later run straight under it. */
+.pf-emitter-num {
+  fill: var(--fg-dim);
+  stroke: #0a0c16;
+  stroke-width: 0.9px;
+  paint-order: stroke;
+  font-size: 3.4px;
+  font-weight: 700;
+  text-anchor: middle;
+  font-family: var(--font);
+  user-select: none;
+}
+
+/* ── Foot / controls ────────────────────────────────────────────────────── */
+
+.pf-foot {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+/* The four turn buttons read as one control, so the coarse/fine pairing is
+ * visible rather than something to be worked out from the labels. */
+.pf-turns {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-2) 70%, transparent);
+  border: 1px solid #262b45;
+}
+
+.pf-turns .pf-btn {
+  padding: 0.45rem 0.7rem;
+  border-color: transparent;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-turns .pf-btn:hover {
+  background: var(--bg-2);
+  border-color: var(--pf-accent);
+}
+
+/* Said plainly under the board, because free aim has no notches to discover
+ * and nothing about a white dot announces that the board can be clicked. */
+.pf-hint {
+  margin: 0;
+  max-width: 40rem;
+  text-align: center;
+  color: var(--fg-dim);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.pf-hint strong {
+  color: var(--fg);
+}
+
+.pf-aim {
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--pf-accent);
+}
+
+.pf-btn {
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid #2a2f4d;
+  background: var(--bg-2);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pf-btn:hover {
+  border-color: var(--pf-accent);
+}
+
+.pf-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pf-btn--quiet {
+  color: var(--fg-dim);
+}
+
+/* ── Result ─────────────────────────────────────────────────────────────── */
+
+.pf-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--good) 45%, #2a2f4d);
+  background: color-mix(in srgb, var(--good) 10%, var(--bg-2));
+}
+
+.pf-done-score {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.pf-done-score small {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--fg-dim);
+}
+
+.pf-done-note {
+  margin: 0 0 0.35rem;
+  color: var(--fg-dim);
+  font-size: 0.9rem;
+}
+
+.pf-done-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pf-share.is-done {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+/* Shown only when the clipboard is blocked, so the result can be copied out by
+ * hand. Full width under the buttons, monospace so the link reads cleanly. */
+.pf-share-box {
+  margin-top: 0.6rem;
+  width: 100%;
+  resize: none;
+  border-radius: 10px;
+  border: 1px solid #2a2f4d;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.6rem;
+}
+
+/* Visually hidden, but read aloud. The board is an SVG a screen reader cannot
+ * usefully describe, so every aim writes a sentence here instead. */
+.pf-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-goal.is-met {
+    filter: none;
+  }
+}

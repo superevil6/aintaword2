@@ -58,20 +58,26 @@ export const SITE_URL = "";
  */
 export const GAME_PARAM = "game";
 
-/** Direct link to one game, for share text and for copying out of the bar. */
+/**
+ * Direct link to one game, for the "share your result" text.
+ *
+ * Points at the game's link-preview page (g/<id>/), NOT at ?game=<id>. The two
+ * reach the same place — the preview page bounces the browser to ?game=<id> —
+ * but only the preview page carries that game's own title and blurb for a
+ * crawler unfurling the link (see src/shareManifest.js and scripts/share-pages).
+ * A shared score is exactly the link that gets unfurled, so it takes the path
+ * that previews correctly.
+ */
 export function gameUrl(gameId) {
   const base = shareUrl();
   if (!base || !gameId) return base;
+  const slug = `g/${encodeURIComponent(gameId)}/`;
   try {
-    // The URL API normalises as it goes — "https://example.com" becomes
-    // "https://example.com/?game=…" rather than the redirect-prone
-    // "https://example.com?game=…".
-    const u = new URL(base);
-    u.searchParams.set(GAME_PARAM, gameId);
-    return u.href;
+    // Resolve the slug against the (slash-terminated) base so it lands at
+    // <base>/g/<id>/ on any host or subpath.
+    return new URL(slug, base.endsWith("/") ? base : base + "/").href;
   } catch {
-    const sep = base.includes("?") ? "&" : "?";
-    return `${base}${sep}${GAME_PARAM}=${encodeURIComponent(gameId)}`;
+    return `${base.endsWith("/") ? base : base + "/"}${slug}`;
   }
 }
 
