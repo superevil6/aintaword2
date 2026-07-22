@@ -55,6 +55,24 @@ export const GAME_SHARE = {
       "Aim beams of light through gates that brighten and dim them, and land each " +
       "on its finish line at exactly the right brightness. A daily optics puzzle.",
   },
+  rootword: {
+    title: "Rootword",
+    description:
+      "Grow a word tree from one seed. Words that start alike share a branch, so " +
+      "pack the most fruit onto a fertile trunk — up to the day's par. A daily puzzle.",
+  },
+  mirrorword: {
+    title: "Mirrorword",
+    description:
+      "A mirror runs down the diagonal, reflecting every letter you place. Fill the " +
+      "grid so each row is a word; chase the rarest letters, worth double when mirrored.",
+  },
+  vanityplate: {
+    title: "Vanity Plate",
+    description:
+      "Word golf on a licence plate. Find a word whose three letters appear in order — " +
+      "TRK → TREK — in as few letters as you can. Six plates a day.",
+  },
 };
 
 /** Share copy for a game id, or the site copy when the id is unknown/absent. */

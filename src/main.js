@@ -19,6 +19,9 @@ import "./games/colorpath/index.js"; // side effect: registers the game
 import "./games/wordiamond/index.js"; // side effect: registers the game
 import "./games/numburst/index.js";  // side effect: registers the game
 import "./games/photonfinish/index.js"; // side effect: registers the game
+import "./games/vanityplate/index.js"; // side effect: registers the game
+import "./games/rootword/index.js";  // side effect: registers the game
+import "./games/mirrorword/index.js"; // side effect: registers the game
 
 const app = document.getElementById("app");
 
