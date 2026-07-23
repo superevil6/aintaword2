@@ -19,6 +19,7 @@
     "storey:daily": "node scripts/build-storey-daily.mjs",
     "mirrorword:seeds": "node scripts/build-mirrorword-seeds.mjs",
     "verify": "node scripts/verify.mjs",
+    "verify:streak": "node scripts/verify-streak.mjs",
     "verify:mirrorword": "node scripts/verify-mirrorword.mjs",
     "verify:colorpath": "node scripts/verify-colorpath.mjs",
     "verify:wordiamond": "node scripts/verify-wordiamond.mjs",
@@ -34,7 +35,7 @@
     "e2e:mirrorword": "node scripts/e2e-mirrorword.mjs",
     "e2e:storey": "node scripts/e2e-storey.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "test": "npm run verify && npm run verify:colorpath && npm run verify:wordiamond && npm run verify:share && npm run verify:photonfinish && npm run verify:mirrorword && npm run verify:vanityplate && npm run verify:storey && npm run e2e && npm run e2e:colorpath && npm run e2e:wordiamond && npm run e2e:photonfinish && npm run e2e:vanityplate && npm run e2e:mirrorword && npm run e2e:storey"
+    "test": "npm run verify && npm run verify:streak && npm run verify:colorpath && npm run verify:wordiamond && npm run verify:share && npm run verify:photonfinish && npm run verify:mirrorword && npm run verify:vanityplate && npm run verify:storey && npm run e2e && npm run e2e:colorpath && npm run e2e:wordiamond && npm run e2e:photonfinish && npm run e2e:vanityplate && npm run e2e:mirrorword && npm run e2e:storey"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

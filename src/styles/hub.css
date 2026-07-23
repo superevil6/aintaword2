@@ -134,6 +134,24 @@
   border-radius: 50%;
 }
 
+/* Current streak pill, opposite the tick so the two never overlap. Quiet by
+   default; the flame carries the meaning. */
+.hub-card-streak {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.7rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  border-radius: 999px;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

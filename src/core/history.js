@@ -87,3 +87,23 @@ export function putResult(gameId, difficulty, result, day = todayKey()) {
 export function playedDates(gameId) {
   return Object.keys(read(gameId).days);
 }
+
+/**
+ * Dates that were played LIVE — completed on their own day rather than backfilled
+ * later via the archive. A date counts if any of its results carries a `playedAt`
+ * whose UTC date equals that date. This is the honest basis for streaks: replaying
+ * an old board still earns its completion dot (playedDates), but can't fabricate a
+ * daily streak. Order is arbitrary.
+ */
+export function livePlayedDates(gameId) {
+  const { days } = read(gameId);
+  const out = [];
+  for (const date of Object.keys(days)) {
+    const results = days[date];
+    const live = Object.values(results).some(
+      (r) => typeof r?.playedAt === "string" && r.playedAt.slice(0, 10) === date,
+    );
+    if (live) out.push(date);
+  }
+  return out;
+}

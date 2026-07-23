@@ -7,6 +7,9 @@
 import "./styles/hub.css";
 import { allGames } from "./core/registry.js";
 import { hubArt } from "./hubArt.js";
+import { livePlayedDates } from "./core/history.js";
+import { computeStreak } from "./core/streak.js";
+import { todayKey } from "./core/daily.js";
 
 // Display sections, in order. A game lands in the FIRST section whose `match`
 // returns true, so the catch-all stays last. Grouping keeps the hub scannable
@@ -51,6 +54,12 @@ export function mountHub(container) {
     const done = new Map(games.map((g) => [g.id, isDone(g)]));
     const doneCount = [...done.values()].filter(Boolean).length;
 
+    // Per-game current streak, computed generically from the shared history
+    // store (keyed by the same id) — no per-game hook needed, same as the
+    // archive dots. Snapshot once so every card agrees.
+    const today = todayKey();
+    const streaks = new Map(games.map((g) => [g.id, currentStreak(g, today)]));
+
     const hub = document.createElement("div");
     hub.className = "hub";
 
@@ -61,7 +70,7 @@ export function mountHub(container) {
         <h1 class="hub-title">Choose a game</h1>
         <p class="hub-subtitle">${progressText(doneCount, games.length)}</p>
       </header>
-      ${groupGames(games).map((s) => sectionHtml(s, done)).join("")}
+      ${groupGames(games).map((s) => sectionHtml(s, done, streaks)).join("")}
     `;
 
     hub.addEventListener("click", (e) => {
@@ -88,13 +97,22 @@ function isDone(game) {
   }
 }
 
+/** Current live-play streak for a game, from the shared store; 0 on any error. */
+function currentStreak(game, today) {
+  try {
+    return computeStreak(livePlayedDates(game.id), today).current;
+  } catch {
+    return 0;
+  }
+}
+
 function progressText(doneCount, total) {
   if (doneCount === 0) return "Today's challenge, one puzzle per difficulty.";
   if (doneCount === total) return "All done for today — nice. Back tomorrow for more.";
   return `${doneCount} of ${total} done today.`;
 }
 
-function sectionHtml(section, done) {
+function sectionHtml(section, done, streaks) {
   return `
     <section class="hub-section">
       <h2 class="hub-section-title">
@@ -102,13 +120,13 @@ function sectionHtml(section, done) {
         <span class="hub-section-count">${section.games.length}</span>
       </h2>
       <ul class="hub-grid" role="list">
-        ${section.games.map((g) => cardHtml(g, done.get(g.id))).join("")}
+        ${section.games.map((g) => cardHtml(g, done.get(g.id), streaks.get(g.id))).join("")}
       </ul>
     </section>
   `;
 }
 
-function cardHtml(g, isPlayed) {
+function cardHtml(g, isPlayed, streak = 0) {
   // A game motif, faded into the tile as a watermark. Games with no motif fall
   // back to their initial letter, so the hub never renders a blank tile.
   const art = hubArt(g.id);
@@ -123,6 +141,11 @@ function cardHtml(g, isPlayed) {
   const doneNote = isPlayed
     ? `<span class="visually-hidden"> — played today</span>`
     : "";
+  // A multi-day run gets a flame. Below 2 there's nothing to celebrate (a lone
+  // day is just today's ✓), so the badge stays hidden to keep the tile calm.
+  const streakBadge = streak >= 2
+    ? `<span class="hub-card-streak" aria-label="${streak}-day streak">🔥 ${streak}</span>`
+    : "";
   return `
     <li>
       <button
@@ -132,6 +155,7 @@ function cardHtml(g, isPlayed) {
       >
         ${decoration}
         ${tick}
+        ${streakBadge}
         <span class="hub-card-title">${escapeHtml(g.title)}${doneNote}</span>
         <span class="hub-card-tagline">${escapeHtml(g.tagline || "")}</span>
       </button>
