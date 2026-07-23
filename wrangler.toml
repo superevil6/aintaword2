@@ -1,0 +1,22 @@
+# Cloudflare configuration for the Wordems site + its Pages Functions backend.
+#
+# This is a PAGES project (pages_build_output_dir is set), NOT a standalone
+# Worker — so it never fights the site build (that was the flaw in the earlier
+# wrangler.jsonc, which lacked this key). `npm run build` still produces the
+# site in dist/; everything under functions/ becomes same-origin API routes at
+# /api/*, and the D1 binding below reaches them as `env.DB`.
+
+name = "wordems"
+compatibility_date = "2026-07-22"
+pages_build_output_dir = "dist"
+
+# D1 (SQLite). One-time setup — create the DB, paste its id here, migrate:
+#   npx wrangler d1 create wordems                       # prints database_id
+#   (paste it below)
+#   npx wrangler d1 migrations apply wordems --remote
+# Full steps + testing in docs/backend.md.
+[[d1_databases]]
+binding = "DB"
+database_name = "wordems"
+database_id = "e7886c69-8004-43d0-87e5-b69477b981ca"
+migrations_dir = "migrations"

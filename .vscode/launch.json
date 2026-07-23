@@ -88,6 +88,20 @@
       "runtimeExecutable": "${env:HOME}/.local/bin/node",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // ► Full local stack for backend work: builds the site, serves it with the
+      // Pages Functions (/api/*) and a LOCAL D1 via wrangler, and opens Firefox
+      // against http://localhost:8788 so /api calls hit the real backend.
+      // Run the "d1: migrate (local)" task ONCE first so the local DB has the
+      // schema. Requires the firefox-devtools.vscode-firefox-debug extension.
+      "name": "▶ Play full stack (Functions + D1)",
+      "type": "firefox",
+      "request": "launch",
+      "url": "http://localhost:8788/",
+      "webRoot": "${workspaceFolder}",
+      "reAttach": true,
+      "preLaunchTask": "backend: build + serve (wrangler)"
     }
   ]
 }

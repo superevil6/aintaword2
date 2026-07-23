@@ -25,12 +25,21 @@ export function pageFor(id, siteUrl = "") {
   const appRelative = `../../?game=${encodeURIComponent(id)}`;
   const canonical = siteUrl ? `${siteUrl}/?game=${encodeURIComponent(id)}` : "";
 
+  // Per-game link-preview image (public/og/<id>.png at the site root). Absolute
+  // when we know the origin — Facebook demands one — else relative to this page,
+  // which still resolves at any host and subpath. `../../` climbs out of g/<id>/.
+  const imageUrl = siteUrl ? `${siteUrl}/og/${id}.png` : `../../og/${id}.png`;
+
   const og = [
     ["og:type", "website"],
     ["og:site_name", SITE_SHARE.title],
     ["og:title", title],
     ["og:description", description],
     canonical ? ["og:url", canonical] : null,
+    ["og:image", imageUrl],
+    ["og:image:width", "1200"],
+    ["og:image:height", "630"],
+    ["og:image:alt", `${title} — a daily puzzle on ${SITE_SHARE.title}`],
   ].filter(Boolean);
 
   return `<!DOCTYPE html>
@@ -39,12 +48,16 @@ export function pageFor(id, siteUrl = "") {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f1220" />
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="../../favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png" />
     <title>${esc(title)}</title>
     <meta name="description" content="${esc(description)}" />
 ${og.map(([p, c]) => `    <meta property="${p}" content="${esc(c)}" />`).join("\n")}
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${esc(title)}" />
     <meta name="twitter:description" content="${esc(description)}" />
+    <meta name="twitter:image" content="${esc(imageUrl)}" />
     ${canonical ? `<link rel="canonical" href="${esc(canonical)}" />` : ""}
     <!-- A crawler reads the tags above and stops here. A human's browser runs
          this and lands in the game; a browser with JS off gets the link below. -->

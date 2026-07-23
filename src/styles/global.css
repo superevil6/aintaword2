@@ -54,6 +54,20 @@
   --fg-dim: #d9a9c2;
   --accent: #ff5fa2;
 }
+:root[data-theme="crimson"] {
+  --bg: #180b0d;
+  --bg-2: #271115;
+  --fg: #ffeceb;
+  --fg-dim: #d3a2a3;
+  --accent: #e5484d;
+}
+:root[data-theme="sapphire"] {
+  --bg: #080d1c;
+  --bg-2: #101a33;
+  --fg: #e9f0ff;
+  --fg-dim: #9fb0d4;
+  --accent: #3b6ef5;
+}
 /* High-contrast: pure black + white, kept FREE (accessibility shouldn't be
    paywalled). Only the SHARED palette maxes out here — a true high-contrast pass
    would also strengthen the ~67 hardcoded faint hairlines, and the light "High
@@ -74,18 +88,34 @@ html,
 body {
   margin: 0;
   height: 100%;
+  background-color: var(--bg);
 }
 
 body {
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ambient gradient on a fixed, full-viewport layer behind all content.
+   Painted on <body> it scrolled with the page and, being a finite radial
+   (120% tall, fading out by 60%), showed its outer edge as a horizontal seam on
+   any page taller than the viewport. Anchored to the viewport with position:
+   fixed it always fills the screen — seam-free on every page, and without the
+   mobile rendering quirks of background-attachment: fixed. --cp-player-color
+   (set on :root by Color Path) still tints it. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background: radial-gradient(
     120% 120% at 50% 0%,
     color-mix(in srgb, var(--cp-player-color, var(--bg-2)) 22%, var(--bg-2)),
     color-mix(in srgb, var(--cp-player-color, var(--bg))   8%,  var(--bg)) 60%
   );
-  color: var(--fg);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 #app {
@@ -187,6 +217,105 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-right: auto;
+}
+
+/* ── Theme picker (app bar) ────────────────────────────────────────────────
+   A collapsed circle in the current theme's colour; clicking it grows the other
+   swatches out to the left as a pill (see src/themeControl.js). Anchored by its
+   right edge so the reveal expands horizontally into the bar's central gap. */
+.theme-picker {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.theme-current,
+.theme-swatch {
+  position: relative;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch, var(--accent));
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.theme-current {
+  border-color: color-mix(in srgb, var(--fg) 50%, transparent);
+}
+.theme-current:hover,
+.theme-swatch:hover {
+  transform: scale(1.12);
+}
+.theme-current:focus-visible,
+.theme-swatch:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+.theme-swatch.is-selected {
+  border-color: var(--fg);
+}
+/* A locked (supporter) theme reads as unavailable: dimmed, with a small lock. */
+.theme-swatch.is-locked {
+  opacity: 0.55;
+  cursor: default;
+}
+.theme-swatch.is-locked:hover {
+  transform: none;
+}
+.theme-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.theme-options {
+  position: absolute;
+  right: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  /* Collapsed: clipped to nothing, so the swatches slide out from behind the
+     current circle when opened rather than popping in. */
+  max-width: 0;
+  padding: 0.3rem 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--bg-2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  transition: max-width 0.24s ease, padding 0.24s ease, opacity 0.18s ease;
+}
+.theme-picker.is-open .theme-options {
+  max-width: 24rem;
+  padding: 0.3rem 0.5rem;
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-current,
+  .theme-swatch {
+    transition: border-color 0.12s;
+  }
+  .theme-current:hover,
+  .theme-swatch:hover {
+    transform: none;
+  }
+  .theme-options {
+    transition: opacity 0.18s;
+  }
 }
 
 /* Supporter badge — visible only when a supporter entitlement is held. Pinned

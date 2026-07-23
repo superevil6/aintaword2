@@ -73,6 +73,51 @@
       "group": { "kind": "build", "isDefault": true },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
+    },
+    {
+      // Full local backend: applies the schema to the LOCAL D1 (idempotent — a
+      // no-op once applied), builds the site, then serves it together with the
+      // Pages Functions (/api/*) and that D1 through wrangler at
+      // http://localhost:8788. The migrate step is what stops the "no such
+      // table: users" error on a fresh clone. Used as the preLaunchTask for the
+      // full-stack launch config. The background matcher waits for wrangler's
+      // "Ready on" line before the browser launches — if a wrangler update
+      // changes that wording, tweak `endsPattern`.
+      "label": "backend: build + serve (wrangler)",
+      "type": "shell",
+      "command": "npx wrangler d1 migrations apply wordems --local && npm run build && npx wrangler pages dev dist",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "PATH": "${env:HOME}/.local/bin:${env:PATH}" }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "aintaword"
+      },
+      "problemMatcher": {
+        "owner": "wrangler",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*(Building|Compiled|Starting|wrangler).*",
+          "endsPattern": ".*(Ready on|localhost:8788).*"
+        }
+      }
+    },
+    {
+      // One-time, and after any schema change: apply migrations to the LOCAL D1
+      // that `wrangler pages dev` uses. Production is the same with --remote.
+      "label": "d1: migrate (local)",
+      "type": "shell",
+      "command": "npx wrangler d1 migrations apply wordems --local",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "PATH": "${env:HOME}/.local/bin:${env:PATH}" }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
     }
   ]
 }

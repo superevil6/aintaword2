@@ -31,52 +31,6 @@
 }
 
 /* Theme picker — a row of colour swatches under the subtitle. */
-.hub-themes {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.9rem;
-}
-
-.hub-theme {
-  position: relative;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  background: var(--swatch);
-  cursor: pointer;
-  transition: transform 0.12s, border-color 0.12s;
-}
-.hub-theme:hover {
-  transform: scale(1.12);
-}
-.hub-theme.is-selected {
-  border-color: var(--fg);
-}
-.hub-theme:focus-visible {
-  outline: 2px solid var(--fg);
-  outline-offset: 2px;
-}
-/* A locked (supporter) theme reads as unavailable: dimmed, with a small lock. */
-.hub-theme.is-locked {
-  opacity: 0.55;
-  cursor: default;
-}
-.hub-theme.is-locked:hover {
-  transform: none;
-}
-.hub-theme-lock {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 0.7rem;
-  line-height: 1;
-}
-
 /* ── Sections ───────────────────────────────────────────────────────────── */
 
 .hub-section {

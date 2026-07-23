@@ -17,6 +17,7 @@ import { getGame, relatedGames } from "./core/registry.js";
 import { ROUND_COMPLETE } from "./core/lifecycle.js";
 import { isSupporter, onChange, installDevBackdoor } from "./core/entitlements.js";
 import { initTheme } from "./core/theme.js";
+import { mountThemeControl } from "./themeControl.js";
 import { openArchive, formatDay } from "./core/archive.js";
 import { todayKey } from "./core/daily.js";
 import { playedDates } from "./core/history.js";
@@ -59,6 +60,11 @@ const archiveBtn = bar.querySelector(".app-archive");
 const archiveLabelEl = bar.querySelector(".app-archive-label");
 bar.querySelector(".app-brand-name").textContent = SITE_NAME;
 
+// Theme control lives at the head of the right-hand cluster (before archive and
+// the supporter badge). Its expanded palette grows leftward into the gap the
+// title's margin-right:auto opens up, so it never covers the other controls.
+const themeControl = mountThemeControl(bar, archiveBtn);
+
 // ── Supporter state ─────────────────────────────────────────────────────────
 //
 // The badge is the one visible signal that an entitlement is held. It reflects
@@ -77,6 +83,8 @@ onChange(() => {
   supporterEl.hidden = !isSupporter();
   syncArchiveButton();
   initTheme();
+  // Supporter themes may have just unlocked (or locked) — re-render the swatches.
+  themeControl.refresh();
 });
 supporterEl.hidden = !isSupporter();
 

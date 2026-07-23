@@ -18,6 +18,7 @@
     "vanityplate:daily": "node scripts/build-vanityplate-daily.mjs",
     "storey:daily": "node scripts/build-storey-daily.mjs",
     "mirrorword:seeds": "node scripts/build-mirrorword-seeds.mjs",
+    "og": "node scripts/build-og.mjs",
     "verify": "node scripts/verify.mjs",
     "verify:streak": "node scripts/verify-streak.mjs",
     "verify:mirrorword": "node scripts/verify-mirrorword.mjs",

@@ -22,6 +22,8 @@ export const THEMES = [
   { id: "slate",    name: "Slate",         swatch: "#8aa0b8", free: false },
   { id: "ocean",    name: "Ocean",         swatch: "#22c1dc", free: false },
   { id: "candy",    name: "Candy",         swatch: "#ff5fa2", free: false },
+  { id: "crimson",  name: "Crimson",       swatch: "#e5484d", free: false },
+  { id: "sapphire", name: "Sapphire",      swatch: "#3b6ef5", free: false },
   // High-contrast is an accessibility mode, kept free on purpose (see global.css).
   { id: "contrast", name: "High Contrast", swatch: "#f4f4f5", free: true },
 ];
