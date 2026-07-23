@@ -60,6 +60,15 @@ export const SITE_URL = "https://wordems.com";
 export const GAME_PARAM = "game";
 
 /**
+ * Lemon Squeezy checkout URL for the supporter tier. Paste the product/variant
+ * checkout link here once the LS product exists (Store → Products → Share).
+ * Empty string hides the buy button, leaving only the "enter your key" path.
+ * The test-mode and live checkout URLs differ — use the test one while building.
+ */
+export const SUPPORTER_CHECKOUT_URL =
+  "https://wordems.lemonsqueezy.com/checkout/buy/c9656b0c-ab4c-4835-a6bf-f4ef341d1217?discount=0";
+
+/**
  * Query parameter that selects a past day to replay (the archive, a supporter
  * perk), as "YYYY-MM-DD". Same query-param rationale as GAME_PARAM: it survives
  * deep links, the back button, and refresh, and a shared archive link works on

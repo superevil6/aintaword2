@@ -6,9 +6,10 @@
 // license key; because each (game, date) row is unique, sync is a conflict-free
 // union rather than a last-write-wins overwrite.
 //
-// SECURITY — currently UNAUTHENTICATED: it trusts whatever `key` is sent. Fine
-// for local testing, but before going live the key MUST be validated (Lemon
-// Squeezy license validate, or a lookup against `users`). See docs/backend.md.
+// AUTH: the key must be a validated supporter. /api/license/validate records
+// holders in `users`; this endpoint rejects any key without an active `users`
+// row (401). The SYNC_ENABLED master switch still gates the whole endpoint on
+// top of that. See docs/backend.md.
 import { json } from "../_utils.js";
 
 const MAX_ROWS = 2000; // guard against an oversized push
@@ -32,6 +33,15 @@ export async function onRequestPost({ env, request }) {
 
   const key = typeof body?.key === "string" ? body.key.trim() : "";
   if (!key) return json({ error: "missing 'key'" }, 400);
+
+  // The key must be a validated supporter (an active row written by
+  // /api/license/validate). Unknown or revoked keys can't read or write.
+  const user = await env.DB.prepare("SELECT status FROM users WHERE license_key = ?1")
+    .bind(key)
+    .first();
+  if (!user || user.status !== "active") {
+    return json({ error: "invalid or inactive key" }, 401);
+  }
 
   const incoming = Array.isArray(body.results) ? body.results.slice(0, MAX_ROWS) : [];
 

@@ -18,6 +18,7 @@ import { ROUND_COMPLETE } from "./core/lifecycle.js";
 import { isSupporter, onChange, installDevBackdoor } from "./core/entitlements.js";
 import { initTheme } from "./core/theme.js";
 import { mountThemeControl } from "./themeControl.js";
+import { openSupporter } from "./supporterModal.js";
 import { openArchive, formatDay } from "./core/archive.js";
 import { todayKey } from "./core/daily.js";
 import { playedDates } from "./core/history.js";
@@ -45,7 +46,7 @@ bar.innerHTML = `
     <span aria-hidden="true">📅</span>
     <span class="app-archive-label">Archive</span>
   </button>
-  <span class="app-supporter" hidden>★ Supporter</span>
+  <button class="app-supporter" type="button"></button>
 `;
 
 const view = document.createElement("div");
@@ -77,16 +78,26 @@ if (import.meta.env.DEV) installDevBackdoor();
 // applied it flash-free but couldn't check the supporter gate).
 initTheme();
 
-// Re-evaluate the supporter badge, archive button, and theme whenever
+// The supporter slot is both signal and entry point: it reads "★ Supporter"
+// when held, "♥ Support" otherwise, and always opens the supporter dialog.
+function syncSupporter() {
+  const sup = isSupporter();
+  supporterEl.classList.toggle("is-supporter", sup);
+  supporterEl.textContent = sup ? "★ Supporter" : "♥ Support";
+  supporterEl.setAttribute("aria-label", sup ? "You're a supporter — manage" : "Become a supporter");
+}
+supporterEl.addEventListener("click", openSupporter);
+
+// Re-evaluate the supporter slot, archive button, and theme whenever
 // entitlements change, so the perks light up (or go dark) live.
 onChange(() => {
-  supporterEl.hidden = !isSupporter();
+  syncSupporter();
   syncArchiveButton();
   initTheme();
   // Supporter themes may have just unlocked (or locked) — re-render the swatches.
   themeControl.refresh();
 });
-supporterEl.hidden = !isSupporter();
+syncSupporter();
 
 let cleanup = null;
 

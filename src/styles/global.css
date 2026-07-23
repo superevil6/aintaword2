@@ -335,6 +335,191 @@ button {
   display: none;
 }
 
+/* The supporter slot is now a button, always shown: quiet "♥ Support" until the
+   entitlement is held, accent "★ Supporter" once it is. (These rules come after
+   the base .app-supporter block above, so they win.) */
+.app-supporter {
+  background: none;
+  cursor: pointer;
+  color: var(--fg-dim);
+  border-color: color-mix(in srgb, var(--fg-dim) 32%, transparent);
+}
+.app-supporter:hover {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--fg-dim) 55%, transparent);
+}
+.app-supporter.is-supporter {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.app-supporter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Supporter modal ─────────────────────────────────────────────────────── */
+
+.supporter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg) 74%, transparent);
+  backdrop-filter: blur(3px);
+}
+.supporter-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-2);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.sup-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.sup-close:hover {
+  color: var(--fg);
+}
+.sup-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.sup-lede {
+  margin: 0 0 0.8rem;
+  color: var(--fg-dim);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.sup-perks {
+  margin: 0 0 1.1rem;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.sup-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bg);
+  background: var(--fg-dim);
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.sup-buy {
+  display: block;
+  text-align: center;
+  padding: 0.7rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 10px;
+}
+.sup-buy:hover {
+  filter: brightness(1.08);
+}
+.sup-soon {
+  margin: 0;
+  padding: 0.6rem;
+  text-align: center;
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  border-radius: 10px;
+}
+.sup-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.1rem 0 0.8rem;
+  color: var(--fg-dim);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sup-divider::before,
+.sup-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.sup-form {
+  display: flex;
+  gap: 0.5rem;
+}
+.sup-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.7rem;
+  background: var(--bg);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  color: var(--fg);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.sup-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.sup-unlock {
+  flex-shrink: 0;
+  padding: 0.6rem 0.9rem;
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.sup-unlock:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.sup-remove {
+  margin-top: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  background: none;
+  border: 1px solid var(--bad);
+  border-radius: 10px;
+  color: var(--bad);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.sup-remove:hover {
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+}
+.sup-msg {
+  margin: 0.7rem 0 0;
+  min-height: 1.1em;
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+}
+
 /* Archive button — appears in the bar only while in a game and holding a
    supporter entitlement (main.js toggles [hidden]). Opens the calendar. */
 .app-archive {

@@ -10,6 +10,13 @@ name = "wordems"
 compatibility_date = "2026-07-22"
 pages_build_output_dir = "dist"
 
+# Non-secret vars — managed HERE, not the dashboard (Pages shows a banner saying
+# so; the dashboard only handles encrypted Secrets). LS_VARIANT_ID restricts
+# license unlocking to the Supporter variant. SYNC_ENABLED is deliberately absent
+# so sync stays 403 in production; local dev turns it on via .dev.vars.
+[vars]
+LS_VARIANT_ID = "1940929"
+
 # D1 (SQLite). One-time setup — create the DB, paste its id here, migrate:
 #   npx wrangler d1 create wordems                       # prints database_id
 #   (paste it below)
