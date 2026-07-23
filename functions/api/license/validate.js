@@ -48,8 +48,12 @@ export async function onRequestPost({ env, request }) {
   // If a variant is configured, the key must belong to it.
   const variantOk =
     !env.LS_VARIANT_ID || String(ls?.meta?.variant_id) === String(env.LS_VARIANT_ID);
+  // Reject sandbox keys — UNLESS explicitly allowed. While the store is
+  // unactivated every key is a test key, so ALLOW_TEST_KEYS="true" keeps things
+  // working; dropping it (at store activation) makes production reject test keys.
+  const testKeyOk = env.ALLOW_TEST_KEYS === "true" || ls?.license_key?.test_mode !== true;
 
-  if (!usable || !variantOk) return json({ valid: false }, 200);
+  if (!usable || !variantOk || !testKeyOk) return json({ valid: false }, 200);
 
   // Record/refresh the holder so /api/sync can authorise by key lookup.
   const email = ls?.meta?.customer_email ?? null;

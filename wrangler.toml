@@ -16,6 +16,13 @@ pages_build_output_dir = "dist"
 # so sync stays 403 in production; local dev turns it on via .dev.vars.
 [vars]
 LS_VARIANT_ID = "1940929"
+# Cross-device sync on in production (the sync client and /api/sync read this).
+SYNC_ENABLED = "true"
+# TEMPORARY — accept Lemon Squeezy TEST-mode keys. Fine while the store is
+# unactivated (every key is a test key). ⚠ DELETE this line when you activate
+# the store for real payments, so leftover test keys can't unlock production.
+# Local dev keeps accepting test keys via .dev.vars, independent of this.
+ALLOW_TEST_KEYS = "true"
 
 # D1 (SQLite). One-time setup — create the DB, paste its id here, migrate:
 #   npx wrangler d1 create wordems                       # prints database_id
