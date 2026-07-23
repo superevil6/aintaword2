@@ -8,7 +8,7 @@ import { registerGame } from "../../core/registry.js";
 import { Dictionary } from "../../core/dictionary.js";
 import { AintAWordGame } from "./game.js";
 import { loadDailySet, pairsFor } from "./dailySet.js";
-import { todayKey } from "./results.js";
+import { todayKey, todaysResults } from "./results.js";
 
 // A dictionary can be shared across games; allow callers to pass one in, else
 // lazily create and cache a single instance here.
@@ -29,18 +29,24 @@ export default registerGame({
     "forgery of a real word. Pick the real word to score; a wrong pick burns a " +
     "second off a clock that never stops.",
   accent: "#7c5cff",
+  tags: ["word"],
+  playedToday: () => Object.keys(todaysResults()).length > 0,
 
   async mount(container, opts = {}) {
-    const day = todayKey();
+    // An archive replay (supporter perk) passes a past `day`; without one we
+    // mount today. Either way the set — and the game's day-scoped storage — is
+    // keyed to that same day.
+    const day = opts.day || todayKey();
     const daily = await loadDailySet(day);
 
     // The precomputed set contains ready-made, already-validated pairs, so the
     // heavy assets (36k-word pool + 173k-word dictionary, ~550KB) are only
-    // fetched when there's no set for today and we must generate at runtime.
+    // fetched when there's no set for that day and we must generate at runtime.
     const dict = daily ? null : await getDictionary(opts);
 
     const game = new AintAWordGame(container, dict, {
       ...opts,
+      day,
       daily: daily ? day : undefined,
       pairsFor: daily ? (id) => pairsFor(daily, id) : opts.pairsFor,
     });

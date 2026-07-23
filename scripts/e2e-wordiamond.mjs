@@ -6,7 +6,7 @@
 // touches, on all three boards. The invariants are the ones whose failure
 // looks like a broken game rather than a wrong answer: a board that will not
 // deal, a rotation that loses a letter, an arrow wired to the wrong side, a
-// lock that fails to pin its neighbours, an undo that does not undo, and — the
+// lock that fails to pin its neighbors, an undo that does not undo, and — the
 // one that actually bit during design — a completed ring that never announces
 // itself as a win.
 
@@ -17,9 +17,13 @@ const dom = new JSDOM(`<!DOCTYPE html><body><div id="app"></div></body>`, {
   url: "http://localhost/",
 });
 const { window } = dom;
+// CustomEvent/Event come from jsdom too: lifecycle.js's announceRoundComplete
+// constructs a CustomEvent, and jsdom's dispatchEvent rejects any Event not made
+// from its own window (Node 24 has a global CustomEvent that would shadow it).
 for (const k of [
   "window", "document", "localStorage",
   "requestAnimationFrame", "cancelAnimationFrame", "HTMLElement", "Node", "SVGElement",
+  "CustomEvent", "Event",
 ]) {
   globalThis[k] = window[k];
 }
@@ -30,8 +34,14 @@ const { MODES, boardFor } = await import("../src/games/wordiamond/shapes.js");
 const { readSide, freeSlotsFor, rotateSlots, solutionRemains } =
   await import("../src/games/wordiamond/ring.js");
 const { buildShareText } = await import("../src/games/wordiamond/share.js");
-const { clearResults, getResult, hasPlayed } = await import("../src/games/wordiamond/results.js");
+const { clearResults, getResult, hasPlayed, saveResult, todayKey } =
+  await import("../src/games/wordiamond/results.js");
 const { FRAMES, CAPTIONS } = await import("../src/games/wordiamond/tutorial.js");
+
+// The store persists only "today"; a fixed past date is now an ephemeral archive
+// replay. Drive the persistence tests with the real today so the save path runs,
+// and keep it stable within this run (todayKey is constant during one process).
+const TODAY = todayKey();
 
 let pass = 0, fail = 0;
 const ok = (cond, msg) => {
@@ -50,7 +60,7 @@ let current = null;
 const mount = (opts = {}) => {
   current?.destroy();
   host().innerHTML = "";
-  current = new WordiamondGame(host(), data, { day: "2026-07-21", ...opts });
+  current = new WordiamondGame(host(), data, { day: TODAY, ...opts });
   return current;
 };
 
@@ -186,7 +196,7 @@ for (const mode of MODES) {
   ok([...game.cells].sort().join("") === sorted, "a rotation permutes letters, never loses one");
   ok(game.cells.every(Boolean), "no cell is emptied");
   ok(readSide(board, game.cells, game.given) === game.solution[game.given],
-    "rotating a neighbour leaves the given word intact");
+    "rotating a neighbor leaves the given word intact");
 
   // undo
   const pristine = fresh({ mode: mode.id });
@@ -211,7 +221,7 @@ for (const mode of MODES) {
   game.arrowBtns[idx + 1].click();
   ok(game.cells.join("") === beforeArrow, "its opposite arrow puts the side back");
 
-  // locking pins a side and narrows its neighbours
+  // locking pins a side and narrows its neighbors
   game = fresh({ mode: mode.id });
   const route = solvePath(game);
   ok(route !== null, "a solution is reachable from the deal");
@@ -300,7 +310,7 @@ section("frozen daily boards");
 
   host().innerHTML = "";
   const fallback = new WordiamondGame(host(), { ...data, day: null }, {
-    mode: mode.id, day: "2026-07-21",
+    mode: mode.id, day: TODAY,
   });
   ok(fallback.cells.join("") === derived.cells.join(""),
     "and with no file at all the board falls back to the identical seeded deal");
@@ -344,7 +354,7 @@ section("dead-end locks");
   if (trap) {
     g.cells = trap.cur;
     g._toggleLock(trap.si);
-    ok(g.stranded, "locking it is recognised as a dead end");
+    ok(g.stranded, "locking it is recognized as a dead end");
 
     const deadTiles = board.sides[trap.si].slots.map((sl) => g.tiles[sl]);
     ok(deadTiles.every((t) => t.classList.contains("is-stranded")),
@@ -408,11 +418,11 @@ section("finished boards");
   const mode = MODES[0];
   const board = boardFor(mode);
   let g = mount({ mode: mode.id });
-  ok(!hasPlayed(mode.id), "nothing is recorded before the win");
+  ok(!hasPlayed(mode.id, TODAY), "nothing is recorded before the win");
 
   solvePath(g).forEach(({ side, steps }) => g._rotate(side, steps));
   const moves = g.moves;
-  const stored = getResult(mode.id);
+  const stored = getResult(mode.id, TODAY);
   ok(stored !== null, "winning records the result");
   ok(stored.moves === moves, "with the move count it actually took");
   ok(stored.ring.join(" ") ===
@@ -423,7 +433,7 @@ section("finished boards");
   // Extra paints must not overwrite the stored count.
   g._paint();
   g._paint();
-  ok(getResult(mode.id).moves === moves, "repainting does not rewrite the result");
+  ok(getResult(mode.id, TODAY).moves === moves, "repainting does not rewrite the result");
 
   g.destroy();
   g = mount({ mode: mode.id });
@@ -444,11 +454,28 @@ section("finished boards");
      === MODES.length - 1, "the other difficulties are still open");
 
   // Yesterday's results must not count as today's.
-  ok(hasPlayed(mode.id), "the result is live for today");
+  ok(hasPlayed(mode.id, TODAY), "the result is live for today");
   const raw = JSON.parse(localStorage.getItem("aintaword2:wordiamond:daily"));
   raw.date = "2020-01-01";
   localStorage.setItem("aintaword2:wordiamond:daily", JSON.stringify(raw));
-  ok(!hasPlayed(mode.id), "but a stale day self-prunes to empty");
+  ok(!hasPlayed(mode.id, TODAY), "but a stale day self-prunes to empty");
+  clearResults();
+}
+
+// ── archive replays are ephemeral ──────────────────────────────────────────
+// A past day (a supporter archive replay) is playable but must never persist,
+// nor clobber today's stored result.
+section("archive replays are ephemeral");
+{
+  clearResults();
+  const mode = MODES[0];
+  const PAST = "2026-01-05";
+  saveResult(mode.id, { moves: 3, ring: ["a", "b"], rings: 1 }, PAST);
+  ok(getResult(mode.id, PAST) === null, "a past-day result is not stored");
+  ok(getResult(mode.id, TODAY) === null, "playing a past day doesn't leak into today");
+  saveResult(mode.id, { moves: 5, ring: ["c", "d"], rings: 1 }, TODAY);
+  ok(getResult(mode.id, TODAY)?.moves === 5, "today's result still persists");
+  ok(getResult(mode.id, PAST) === null, "today's result doesn't appear under a past day");
   clearResults();
 }
 

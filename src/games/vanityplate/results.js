@@ -28,16 +28,27 @@ function readToday() {
   }
 }
 
-export function todaysResults() {
+// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
+// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
+// unplayed and never writes, so replaying an old course can't overwrite today's
+// scorecard or pollute the all-time best. Persisting past days is the later
+// "completion history" step; until then archive plays are just-for-fun.
+function isToday(day) {
+  return day === todayKey();
+}
+
+export function todaysResults(day = todayKey()) {
+  if (!isToday(day)) return {};
   return readToday()?.results || {};
 }
 
 /** @returns {{strokes:number, par:number, birdies:number, playedAt:string}|null} */
-export function getResult(difficulty) {
-  return todaysResults()[difficulty] || null;
+export function getResult(difficulty, day = todayKey()) {
+  return todaysResults(day)[difficulty] || null;
 }
 
-export function saveResult(difficulty, { strokes, par, birdies }) {
+export function saveResult(difficulty, { strokes, par, birdies }, day = todayKey()) {
+  if (!isToday(day)) return; // ephemeral archive replay — don't persist
   try {
     const data = readToday() || { date: todayKey(), results: {} };
     data.date = todayKey();
@@ -65,7 +76,8 @@ export function bestResult(difficulty) {
 }
 
 /** @returns {boolean} was it a personal record (fewer strokes, or more birdies on a tie) */
-export function recordBest(difficulty, { strokes, par, birdies }) {
+export function recordBest(difficulty, { strokes, par, birdies }, day = todayKey()) {
+  if (!isToday(day)) return false; // archive replays don't set all-time records
   const prev = bestResult(difficulty);
   const better =
     !prev ||

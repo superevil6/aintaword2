@@ -154,7 +154,7 @@ for (let i = 0; i < DAYS; i++) {
     sets[id] = board;
   }
   // All difficulties or none: a file missing one tier would send that tier
-  // down the fallback path while its neighbours came from the archive.
+  // down the fallback path while its neighbors came from the archive.
   if (!complete) { unproven.push(day); continue; }
   writeFileSync(file, JSON.stringify({ date: day, v: FORMAT, sets }));
   written++;

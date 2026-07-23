@@ -7,28 +7,37 @@ import "./colorpath.css";
 import { registerGame } from "../../core/registry.js";
 import { ColorPathGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
+import { todayKey, todaysResults } from "./results.js";
 
 export default registerGame({
   id:      "colorpath",
   title:   "Color Path",
   // The win condition is collecting every target, not reaching any particular
-  // colour — an earlier tagline promised a "goal color" that does not exist.
+  // color — an earlier tagline promised a "goal color" that does not exist.
   tagline: "Mix red, yellow and blue to reach every glowing circle.",
   description:
     "A grid of colored circles. Starting from white, choose which primary " +
     "color to add or remove at each step. Route through every glowing circle " +
     "— there is one in each quadrant — in as few moves as possible.",
   accent: "#e07818",
+  tags: ["color", "spatial"],
+  playedToday: () => Object.keys(todaysResults()).length > 0,
 
   async mount(container, opts = {}) {
     // No difficulty is resolved here: the game opens on its own picker, the
     // same way Ain't a Word does. Passing opts.difficulty skips straight into
     // that tier, and opts.seed overrides the daily seed for tests.
     //
-    // Today's frozen boards, if they have been generated. Best-effort: the
+    // The archive calendar (a supporter perk) mounts a past "YYYY-MM-DD" via
+    // opts.day; without one this is today. The day picks which frozen board to
+    // load and which seed to derive — and results.js keeps any non-today day
+    // ephemeral, so replaying an old board never touches today's stored result.
+    const day = opts.day || todayKey();
+
+    // That day's frozen boards, if they have been generated. Best-effort: the
     // game regenerates the same layouts from the seed when the file is absent.
-    const daily = opts.daily ?? (await loadDay());
-    const game = new ColorPathGame(container, { ...opts, daily });
+    const daily = opts.daily ?? (await loadDay(day));
+    const game = new ColorPathGame(container, { ...opts, day, daily });
     return () => game.destroy();
   },
 });

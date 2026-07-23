@@ -18,6 +18,9 @@ const { window } = dom;
 // NB: do NOT copy jsdom's `performance` — it internally calls the global
 // `performance.now()`, so shadowing the global with it causes infinite
 // recursion. Node's native global `performance` works fine for timer.js.
+// CustomEvent/Event come from jsdom too: lifecycle.js's announceRoundComplete
+// constructs a CustomEvent, and jsdom's dispatchEvent rejects any Event not made
+// from its own window (Node 24 has a global CustomEvent that would shadow it).
 for (const k of [
   "window",
   "document",
@@ -25,6 +28,8 @@ for (const k of [
   "requestAnimationFrame",
   "cancelAnimationFrame",
   "HTMLElement",
+  "CustomEvent",
+  "Event",
 ]) {
   globalThis[k] = window[k];
 }
@@ -32,8 +37,12 @@ for (const k of [
 // Import AFTER globals exist (game.js touches window at import time via bind only,
 // but be safe).
 const { AintAWordGame } = await import("../src/games/aintaword/game.js");
+const { getResult, saveResult, todayKey } = await import("../src/games/aintaword/results.js");
 const { wordsForTiers } = await import("../src/data/commonWords.js");
 const { DIFFICULTIES, DIFFICULTY_ORDER } = await import("../src/games/aintaword/difficulty.js");
+
+// Only "today" is persisted; a fixed past date is an ephemeral archive replay.
+const TODAY = todayKey();
 const COMMON_WORDS = wordsForTiers();
 
 // --- dictionary shim (load real word list from disk) ----------------------
@@ -246,7 +255,7 @@ ok(JSON.stringify(runA) !== JSON.stringify(other), "a different seed gives a dif
 function playerRun(difficulty) {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const g = new AintAWordGame(host, dict, {}); // no seed — real daily behaviour
+  const g = new AintAWordGame(host, dict, {}); // no seed — real daily behavior
   g.start(difficulty);
   const seq = [];
   for (let i = 0; i < 12; i++) {
@@ -411,6 +420,20 @@ ok(box.value === g2.shareText(), "fallback box holds the exact share text");
 ok(!/Copied!/.test(shareBtn.textContent), "does not falsely claim it copied");
 g2.destroy();
 shareHost.remove();
+
+// --- archive replays are ephemeral ----------------------------------------
+
+console.log("\narchive replays (any non-today day) never persist or clobber today:");
+{
+  localStorage.clear();
+  const PAST = "2026-01-05";
+  saveResult("easy", { score: 10, history: [] }, PAST);
+  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
+  ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+  saveResult("easy", { score: 12, history: [] }, TODAY);
+  ok(getResult("easy", TODAY)?.score === 12, "today's result still persists");
+  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+}
 
 console.log(`\n${fail === 0 ? "✅" : "❌"} ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

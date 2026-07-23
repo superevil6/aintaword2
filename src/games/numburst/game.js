@@ -32,8 +32,9 @@ import { matchFor, boardFromRound } from "./dailySet.js";
 import { mountTutorial } from "./tutorial.js";
 import { buildShareText, copyToClipboard } from "./share.js";
 
-import { dailySeedFor, getResult, saveResult, bestResult, recordBest } from "./results.js";
+import { todayKey, dailySeedFor, getResult, saveResult, bestResult, recordBest } from "./results.js";
 import { Rng } from "../../core/rng.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 
 /**
  * Animation timings, in ms.
@@ -74,6 +75,11 @@ export class NumburstGame {
   constructor(container, opts = {}) {
     this.root = container;
     this.opts = opts;
+    // The day in play. Defaults to today; an archive replay (a past day, a
+    // supporter perk) passes opts.day, which keys the board's seed and turns
+    // every persistence call into a no-op so the replay can't touch today's
+    // result or the all-time best.
+    this.day = opts.day || todayKey();
     this.profile = null;
     this.board = null;
     this.seed = null;
@@ -140,7 +146,7 @@ export class NumburstGame {
     this.profile = getDifficulty(difficultyId);
     this.seed = this.opts.seed != null
       ? `${this.opts.seed}:${this.profile.id}`
-      : dailySeedFor(this.profile.id);
+      : dailySeedFor(this.profile.id, this.day);
     // The day's frozen match for this tier, when the archive has it: the ROUNDS
     // boards plus a par. A custom opts.seed (tests, practice) is never a daily,
     // so it always generates and has no par.
@@ -201,7 +207,7 @@ export class NumburstGame {
     let firstBtn = null;
     for (const id of DIFFICULTY_ORDER) {
       const prof = DIFFICULTIES[id];
-      const done = getResult(id);
+      const done = getResult(id, this.day);
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -227,7 +233,7 @@ export class NumburstGame {
           : `${prof.label}: ${prof.blurb}. ${prof.orbCount} orbs, values up to ${prof.maxValue}, ${ROUNDS} rounds.`,
       );
       // SCAFFOLDING: a played tier just replays. Colorpath shows the stored
-      // result instead, which is the behaviour to copy once there is a result
+      // result instead, which is the behavior to copy once there is a result
       // screen worth showing.
       btn.addEventListener("click", () => this.start(id));
       list.appendChild(btn);
@@ -290,7 +296,7 @@ export class NumburstGame {
     this._fieldEl = field;
 
     // Effects layer. Its viewBox is the board's own coordinate space, so
-    // arrows can be drawn straight from orb centres with no pixel conversion
+    // arrows can be drawn straight from orb centers with no pixel conversion
     // and no resize handling — the SVG scales with the field for free.
     const size = this.board.size ?? DEFAULT_SIZE;
     const fx = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -424,7 +430,7 @@ export class NumburstGame {
       btn.dataset.bomb = String(value);
       btn.disabled = count === 0;
       // Same ramp as the orbs: a 2-bomb is the blue of a 2-orb, so "what will
-      // this kill outright" is a colour match rather than arithmetic.
+      // this kill outright" is a color match rather than arithmetic.
       btn.style.setProperty("--nb-hue", String(hueForValue(value)));
       btn.innerHTML = `
         <span class="nb-bomb-value">${value}</span>
@@ -510,7 +516,7 @@ export class NumburstGame {
    *
    * Damage lands BEFORE anything falls, and lands visibly: each blow draws an
    * arrow from the orb that burst to the orb it hit, floats the number it took
-   * off, and rewrites that orb's value and colour on the spot. Only once the
+   * off, and rewrites that orb's value and color on the spot. Only once the
    * whole chain has played out does the pile collapse.
    *
    * The ordering is the point. Previously the arithmetic and the collapse
@@ -541,7 +547,7 @@ export class NumburstGame {
 
         // The struck orb takes its new value immediately: the number ticks
         // down and the hue drops to match, so a wounded orb is instantly too
-        // big for its colour.
+        // big for its color.
         el.textContent = String(hit.after);
         el.style.setProperty("--nb-hue", String(hueForValue(hit.after)));
         if (!hit.died) el.classList.add("is-hurt");
@@ -607,7 +613,7 @@ export class NumburstGame {
 
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("class", "nb-arrow");
-    // Normalise the length to 1 so a single dash animation draws any dart from
+    // Normalize the length to 1 so a single dash animation draws any dart from
     // source to target at the same rate, regardless of how far it reaches.
     line.setAttribute("pathLength", "1");
     line.setAttribute("x1", (from.x + ux * from.r * 0.5).toFixed(2));
@@ -731,8 +737,8 @@ export class NumburstGame {
     // only reflect the last board; a per-match tiebreak can come later with the
     // par score, so keep the shape simple for now.
     const unused = bombsLeft(this.board);
-    saveResult(this.profile.id, { score: this.score, unused });
-    const record = recordBest(this.profile.id, { score: this.score, unused });
+    saveResult(this.profile.id, { score: this.score, unused }, this.day);
+    const record = recordBest(this.profile.id, { score: this.score, unused }, this.day);
     const best = bestResult(this.profile.id);
 
     // SCAFFOLDING: an inline panel, not the modal the other games use. It says
@@ -779,6 +785,7 @@ export class NumburstGame {
     panel.appendChild(actions);
     this.root.appendChild(panel);
     share.focus();
+    announceRoundComplete(this.root);
   }
 
   /** Assemble and copy the share text, with a manual-copy fallback. */
@@ -825,10 +832,10 @@ export class NumburstGame {
  * Expressed as an oklch hue and consumed with fixed lightness and chroma in
  * the stylesheet, so every orb is equally bright and only the hue moves. That
  * is what keeps white numerals legible across the whole range — an HSL ramp
- * would wash out at yellow and need per-hue text colours to compensate.
+ * would wash out at yellow and need per-hue text colors to compensate.
  *
- * Colour here is decoration over size and numeral, never the sole carrier, so
- * this ramp does not need to survive colour-vision deficiency on its own.
+ * Color here is decoration over size and numeral, never the sole carrier, so
+ * this ramp does not need to survive color-vision deficiency on its own.
  */
 const HUE_MIN_VALUE = 2;   // coolest orb — the generator's floor
 const HUE_MAX_VALUE = 9;   // hottest orb, the highest any tier generates
@@ -842,7 +849,7 @@ export function hueForValue(value) {
 }
 
 /**
- * Honour the OS "reduce motion" setting by skipping straight to the outcome.
+ * Honor the OS "reduce motion" setting by skipping straight to the outcome.
  *
  * Checked at call time rather than cached: the setting can be flipped mid-run,
  * and a player who turns it on because the falling made them queasy should not

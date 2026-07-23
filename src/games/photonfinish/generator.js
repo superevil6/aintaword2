@@ -438,7 +438,7 @@ function goalsFarApart(goals) {
 }
 
 /**
- * Choose one spot per beam, honouring the brightness constraints, and reject
+ * Choose one spot per beam, honoring the brightness constraints, and reject
  * assignments whose goals crowd each other.
  *
  * With `goalExtremes` the board must hold one DARKEST goal (level 0) and one

@@ -7,6 +7,7 @@ import "./wordiamond.css";
 import { registerGame } from "../../core/registry.js";
 import { WordiamondGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
+import { todaysResults } from "./results.js";
 
 export default registerGame({
   id: "wordiamond",
@@ -14,11 +15,13 @@ export default registerGame({
   tagline: "Words share their corners. Rotate one side and two others break.",
   description:
     "A ring of words around a shape, sharing their corner letters. Rotating one " +
-    "side drags its neighbours' corners with it, so nothing can be solved in " +
+    "side drags its neighbors' corners with it, so nothing can be solved in " +
     "isolation. One word is given; land the rest, locking each as you find it. " +
     "Any real words win — not just the ones it was built from. Three shapes: a " +
     "square of three-letter words, a square of four, and a pentagon.",
   accent: "#5b8ff5",
+  tags: ["word", "grid"],
+  playedToday: () => Object.keys(todaysResults()).length > 0,
 
   async mount(container, opts = {}) {
     // Loaded on demand so the puzzle pools and the word lists — needed at

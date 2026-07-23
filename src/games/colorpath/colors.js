@@ -43,7 +43,7 @@ export const PRIMARIES = [
 // mixing to read correctly is most of what makes the rule learnable, so this
 // is what everybody sees unless they ask otherwise.
 //
-// `cvd` trades some of that fidelity for separation. Eight colours on a
+// `cvd` trades some of that fidelity for separation. Eight colors on a
 // three-primary wheel cannot be told apart by hue alone — to a red-green
 // dichromat, Red/Orange/Yellow/Green/Brown all sit on the axis they have lost
 // — so this palette is tuned on the one channel that survives, lightness,
@@ -54,10 +54,10 @@ export const PRIMARIES = [
 // stop looking like mixes, which is exactly why it is opt-in.
 //
 // Neither palette is asked to carry the board alone: the RYB pips are on in
-// both, always. Colour is the fast read; the pips are the one that is always
+// both, always. Color is the fast read; the pips are the one that is always
 // right. See `pipsMarkup`.
 //
-//   hex     — the circle fills, indexed by colour
+//   hex     — the circle fills, indexed by color
 //   ink     — what gets drawn ON a circle (pips, the collected tick), picked
 //             per fill for contrast: dark on the light half, light on the dark
 //   primary — the three control buttons, in PRIMARIES order
@@ -150,12 +150,12 @@ export function setPalette(id) {
   window.dispatchEvent(new window.CustomEvent(PALETTE_EVENT, { detail: id }));
 }
 
-/** Fill for a colour index, in whichever palette is active. */
+/** Fill for a color index, in whichever palette is active. */
 export function colorHex(color) {
   return PALETTES[active].hex[color];
 }
 
-/** Ink for anything drawn on top of a colour index. */
+/** Ink for anything drawn on top of a color index. */
 export function colorInk(color) {
   return PALETTES[active].ink[color];
 }
@@ -166,12 +166,12 @@ export function primaryHex(i) {
 }
 
 /**
- * The three-pip glyph that spells out a colour's primaries: one slot per
+ * The three-pip glyph that spells out a color's primaries: one slot per
  * primary in R-Y-B order, filled when that primary is present. This is the
- * redundant, non-colour encoding — White reads as three empty rings, Brown as
+ * redundant, non-color encoding — White reads as three empty rings, Brown as
  * three filled ones, and every mix in between is countable rather than guessed.
  *
- * Decorative in the markup: the cell already carries the colour name in its
+ * Decorative in the markup: the cell already carries the color name in its
  * aria-label, and a screen reader has no use for the dots.
  */
 export function pipsMarkup(color) {
@@ -182,7 +182,7 @@ export function pipsMarkup(color) {
 }
 
 /**
- * Put a colour on an element built with `pipsMarkup`: the fill, the ink that
+ * Put a color on an element built with `pipsMarkup`: the fill, the ink that
  * anything drawn on top of it uses, and the pip states. One function so the
  * fill and the pips can never drift apart — a circle showing green while its
  * pips say red would be worse than no pips at all.

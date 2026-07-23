@@ -26,7 +26,7 @@ const root = path.join(dir, "..");
 // "abdicate". The tiers are disjoint — each word appears in exactly one.
 const TIERS = ["10", "20", "35"];
 const VARIANTS = ["english", "american"]; // American spellings only — mixing in
-// British forms would make "colour" look fake to a US player.
+// British forms (e.g. "colour") would look fake to a US player.
 
 const MIN_LEN = 5;
 // Up to 15 so the Hard band (10+) has real material. The UI auto-fits the

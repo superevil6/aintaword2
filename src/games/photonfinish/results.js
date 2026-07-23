@@ -22,16 +22,27 @@ function readToday() {
   }
 }
 
-export function todaysResults() {
+// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
+// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
+// unplayed and never writes, so replaying an old board can't overwrite today's
+// result or pollute the all-time best. Persisting past days is the later
+// "completion history" step; until then archive plays are just-for-fun.
+function isToday(day) {
+  return day === todayKey();
+}
+
+export function todaysResults(day = todayKey()) {
+  if (!isToday(day)) return {};
   return readToday()?.results || {};
 }
 
 /** @returns {{solved:boolean, moves:number, playedAt:string}|null} */
-export function getResult(difficulty) {
-  return todaysResults()[difficulty] || null;
+export function getResult(difficulty, day = todayKey()) {
+  return todaysResults(day)[difficulty] || null;
 }
 
-export function saveResult(difficulty, { solved, moves }) {
+export function saveResult(difficulty, { solved, moves }, day = todayKey()) {
+  if (!isToday(day)) return; // ephemeral archive replay — don't persist
   try {
     const data = readToday() || { date: todayKey(), results: {} };
     data.date = todayKey();
@@ -54,7 +65,8 @@ export function bestResult(difficulty) {
 }
 
 /** @returns {boolean} was it a record */
-export function recordBest(difficulty, { solved, moves }) {
+export function recordBest(difficulty, { solved, moves }, day = todayKey()) {
+  if (!isToday(day)) return false; // archive replays don't set all-time records
   if (!solved) return false;
   const prev = bestResult(difficulty);
   if (prev && prev.moves <= moves) return false;

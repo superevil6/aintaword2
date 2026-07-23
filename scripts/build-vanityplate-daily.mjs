@@ -44,7 +44,7 @@ import {
 import { dailySeedFor } from "../src/games/vanityplate/results.js";
 import {
   loadPools,
-  analyse,
+  analyze,
   passesFairness,
   birdieLenFor,
   isCleanPlate,
@@ -97,7 +97,7 @@ for (const a of LETTERS)
         denied++;
         continue;
       }
-      const s = analyse(plate, familiar, famTier);
+      const s = analyze(plate, familiar, famTier);
       if (!s) continue;
       if (!passesFairness(s)) continue;
       for (const id of DIFFICULTY_ORDER) {

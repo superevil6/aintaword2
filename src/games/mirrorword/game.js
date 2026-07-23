@@ -26,6 +26,7 @@ import { makePuzzle, valueOf, scoreGrid, isSolved, hintCells } from "./engine.js
 import { mountTutorial } from "./tutorial.js";
 import { buildShareText, copyToClipboard, starsFor } from "./share.js";
 import { todayKey, getResult, saveResult, bestResult, recordBest } from "./results.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 
 const KB_ROWS = [
   ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -124,7 +125,7 @@ export class MirrorwordGame {
     let firstBtn = null;
     for (const id of DIFFICULTY_ORDER) {
       const prof = DIFFICULTIES[id];
-      const done = getResult(id);
+      const done = getResult(id, this.day);
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -162,7 +163,7 @@ export class MirrorwordGame {
 
   start(id) {
     this.profile = getDifficulty(id);
-    const done = getResult(this.profile.id);
+    const done = getResult(this.profile.id, this.day);
     if (done) {
       this._showResult(done, { replay: true });
       return;
@@ -471,8 +472,8 @@ export class MirrorwordGame {
   _finish() {
     if (!this.solvedOnce) return;
     const result = { score: this.bestScore, par: this.puzzle.par };
-    saveResult(this.profile.id, result);
-    recordBest(this.profile.id, { score: this.bestScore });
+    saveResult(this.profile.id, result, this.day);
+    recordBest(this.profile.id, { score: this.bestScore }, this.day);
     this._showResult(result, { replay: false });
   }
 
@@ -517,6 +518,7 @@ export class MirrorwordGame {
     });
 
     this.root.appendChild(card);
+    announceRoundComplete(this.root);
   }
 
   async _share(btn, result) {

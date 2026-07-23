@@ -2,7 +2,7 @@
 //
 // Deliberately spoiler-free: the text NEVER contains the words. Everyone plays
 // the same daily board, so pasting the ring into a group chat hands the answer
-// to whoever has not played yet — and unlike a route or a colour layout, four
+// to whoever has not played yet — and unlike a route or a color layout, four
 // words ARE the whole solution.
 //
 // Anyone who wants to compare rings can still post them themselves, behind

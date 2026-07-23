@@ -17,10 +17,10 @@
 // length most crawlers show before truncating.
 
 export const SITE_SHARE = {
-  title: "Word Games",
+  title: "Wordems",
   description:
     "A small collection of daily puzzle games — a fresh board every day for each. " +
-    "Spot the fake word, mix light into colour, and more.",
+    "Spot the fake word, mix light into color, and more.",
 };
 
 /** Keyed by game id. Order is display order on any list that iterates it. */
@@ -46,7 +46,7 @@ export const GAME_SHARE = {
   numburst: {
     title: "Numburst",
     description:
-      "Burst the big numbered orbs first — each one takes its neighbours down with it. " +
+      "Burst the big numbered orbs first — each one takes its neighbors down with it. " +
       "Spend a handful of bombs for the biggest chain reaction.",
   },
   photonfinish: {
@@ -70,8 +70,14 @@ export const GAME_SHARE = {
   vanityplate: {
     title: "Vanity Plate",
     description:
-      "Word golf on a licence plate. Find a word whose three letters appear in order — " +
+      "Word golf on a license plate. Find a word whose three letters appear in order — " +
       "TRK → TREK — in as few letters as you can. Six plates a day.",
+  },
+  storey: {
+    title: "Storey",
+    description:
+      "Build a tower of words. Each floor is a word on two consonant pillars from your " +
+      "daily tiles — wider pays more, but every storey up fights gravity. Reach par.",
   },
 };
 

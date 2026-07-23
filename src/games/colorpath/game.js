@@ -1,6 +1,7 @@
 // NB: styles are imported by index.js, not here — keeping game.js free of
 // CSS imports is what lets scripts/e2e.mjs drive it under jsdom.
 import { Grid } from "./grid.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 import { generateGrid } from "./generator.js";
 import {
   COLOR_NAMES, PRIMARIES, PALETTE_EVENT,
@@ -37,6 +38,10 @@ export class ColorPathGame {
   constructor(container, opts = {}) {
     this.root = container;
     this.opts = opts;
+    // Which day's puzzle this is. The shell passes a past date for an archive
+    // replay (a supporter perk); absent, it's today. results.js keeps any
+    // non-today day ephemeral — playable, but never persisted.
+    this.day = opts.day || todayKey();
     this.profile = null;     // active difficulty profile, null on the picker
     this.size = 0;
     this.targetCount = 0;
@@ -96,7 +101,7 @@ export class ColorPathGame {
     this._applyProfile(difficultyId);
     this.seed = this.opts.seed != null
       ? `${this.opts.seed}:${this.profile.id}`
-      : dailySeedFor(this.profile.id);
+      : dailySeedFor(this.profile.id, this.day);
     this._build();
   }
 
@@ -112,11 +117,11 @@ export class ColorPathGame {
   }
 
   /**
-   * The colourblind-palette checkbox. Mounted on both the picker and the
+   * The colorblind-palette checkbox. Mounted on both the picker and the
    * board: the board is where you find out you cannot read the circles, so
    * making you leave the run to fix it would be the wrong trade.
    *
-   * Deliberately worded as a colour swap rather than an accessibility mode —
+   * Deliberately worded as a color swap rather than an accessibility mode —
    * the pips are on for everyone either way, so this switch only decides which
    * eight fills you get.
    */
@@ -175,7 +180,7 @@ export class ColorPathGame {
       <p class="cp-card-lede">Every circle is red, yellow and blue mixed together. White is none of them. The three dots on a circle spell out which primaries it holds &mdash; red, yellow, blue, left to right.</p>
     `;
 
-    // The demo covers add/remove/step and the trail recolouring, so the written
+    // The demo covers add/remove/step and the trail recoloring, so the written
     // rules only need to carry what it cannot show.
     this._tutorialCleanup = mountTutorial(card);
 
@@ -194,7 +199,7 @@ export class ColorPathGame {
     let firstBtn = null;
     for (const id of DIFFICULTY_ORDER) {
       const prof = DIFFICULTIES[id];
-      const done = getResult(id);
+      const done = getResult(id, this.day);
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -342,7 +347,7 @@ export class ColorPathGame {
       btn.setAttribute("aria-label", name);
       // Sign plus the pip slot this button owns: which of the three dots on the
       // circles it flips, in the same left-to-right order. A player who cannot
-      // read the button's colour can still read which column it drives.
+      // read the button's color can still read which column it drives.
       btn.innerHTML = `
         <span class="cp-primary-sign">+</span>
         ${pipsMarkup(bit)}
@@ -350,7 +355,7 @@ export class ColorPathGame {
       `;
       btn.addEventListener("click", () => this._onPrimaryClick(bit));
 
-      // Preview where this primary would land you. Teaching the colour rule by
+      // Preview where this primary would land you. Teaching the color rule by
       // showing its consequence beats any amount of explanatory text.
       btn.addEventListener("pointerenter", () => this._showPreview(bit));
       btn.addEventListener("pointerleave", () => this._clearPreview());
@@ -522,8 +527,8 @@ export class ColorPathGame {
     const moves  = this.grid.moves;
     const timeMs = this._startTime ? Date.now() - this._startTime : 0;
 
-    saveResult(this.profile.id, { moves, timeMs });
-    const isRecord = recordBest(this.profile.id, { moves, timeMs });
+    saveResult(this.profile.id, { moves, timeMs }, this.day);
+    const isRecord = recordBest(this.profile.id, { moves, timeMs }, this.day);
 
     const screen = document.createElement("div");
     screen.className = "cp-win";
@@ -561,6 +566,7 @@ export class ColorPathGame {
 
     this.root.appendChild(card);
     this._wireResultActions(card, { moves: result.moves, timeMs: result.timeMs });
+    announceRoundComplete(this.root);
   }
 
   _resultActionsHtml() {
@@ -587,7 +593,7 @@ export class ColorPathGame {
       moves,
       timeMs,
       difficultyLabel: this.profile.label,
-      daily: todayKey(),
+      daily: this.day,
       best: bestResult(this.profile.id),
     });
   }
@@ -729,9 +735,9 @@ export class ColorPathGame {
       paintSwatch(cell, shown);
     }
 
-    // Primary buttons stay put and grey out when unusable. Hiding them shifted
+    // Primary buttons stay put and gray out when unusable. Hiding them shifted
     // the layout every move, and silently filtered the illegal options — which
-    // is the colour reasoning the game is actually about.
+    // is the color reasoning the game is actually about.
     for (const btn of this._primaryBtns) {
       const bit     = Number(btn.dataset.bit);
       const targets = grid.targetsFor(bit);

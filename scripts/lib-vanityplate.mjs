@@ -73,7 +73,7 @@ export function loadPools() {
 // ── per-plate analysis ───────────────────────────────────────────────────────
 
 /** Familiar stats for a plate, or null if unsolvable in the familiar pool. */
-export function analyse(plate, familiar, famTier) {
+export function analyze(plate, familiar, famTier) {
   let min = Infinity;
   let count = 0;
   const parWords = [];

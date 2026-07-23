@@ -1,8 +1,8 @@
 /* Vanity Plate — a road/license-plate skin over a golf scorecard.
  *
  * Scoped under .vp (added to the mount container by game.js) so nothing here
- * leaks into the shared shell or the other games. Colour tokens are local:
- * asphalt background, an embossed licence plate, and golf-green / birdie-blue /
+ * leaks into the shared shell or the other games. Color tokens are local:
+ * asphalt background, an embossed license plate, and golf-green / birdie-blue /
  * bogey-orange for scoring. */
 
 .vp {
@@ -227,9 +227,12 @@
 .vp-hint b { color: var(--vp-line2); letter-spacing: 2px; }
 
 /* ── entry ── */
-#vp-form { display: flex; gap: 8px; margin: 14px 0 4px; }
+/* Stacked, not side-by-side: a button beside the field is cramped on a phone
+ * and easy to fat-finger. Full-width button under the input reads clearly and
+ * gives a big tap target. */
+#vp-form { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 4px; }
 #vp-in {
-  flex: 1;
+  width: 100%;
   font: inherit;
   font-size: 22px;
   letter-spacing: 2px;
@@ -244,10 +247,11 @@
 }
 #vp-in:focus { border-color: var(--vp-line); }
 .vp-go {
+  width: 100%;
   font: inherit;
   font-weight: 700;
   font-size: 16px;
-  padding: 0 18px;
+  padding: 12px 18px;
   border-radius: 12px;
   border: 0;
   background: var(--vp-line);

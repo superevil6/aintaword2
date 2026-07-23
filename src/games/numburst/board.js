@@ -541,7 +541,7 @@ export function detonate(board, id, bombValue, { settleAfter = true } = {}) {
       // across a gap. Against a packed pile that makes the board a graph you
       // can read off the screen: chains run along visible chains of orbs, so a
       // player can trace a route before spending anything. The old radius
-      // version reached over the top of neighbours, which meant the reason a
+      // version reached over the top of neighbors, which meant the reason a
       // chain worked was never visible.
       //
       // Contact is measured on positions from BEFORE the collapse, which is

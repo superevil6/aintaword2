@@ -39,7 +39,7 @@ const args = Object.fromEntries(
 const COUNT = Number(args.count ?? 365);
 
 // SCOWL size tiers: 10 is the most common English vocabulary, 20 common but
-// less so. Tier 35 is deliberately excluded — a player has to recognise these
+// less so. Tier 35 is deliberately excluded — a player has to recognize these
 // as words while the board churns, and 35 admits too much that merely looks
 // plausible.
 const TIERS = ["10", "20"];
@@ -221,7 +221,7 @@ for (const mode of MODES) {
 // two thirds of the sides that lit up under the full ENABLE list held a word
 // nobody knows — KEPS, DAWS, SABE — because ENABLE is 76% unfamiliar at four
 // letters and 84% at five. A board that lights up for a word the player cannot
-// recognise is not being generous, it is being noisy: it offers a lock they
+// recognize is not being generous, it is being noisy: it offers a lock they
 // have no way to evaluate, and hands out wins that feel like accidents.
 //
 // The cost is real and worth stating: a player who forms a genuinely valid but

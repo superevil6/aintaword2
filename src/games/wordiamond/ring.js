@@ -31,8 +31,8 @@ export const isRing = (board, cells, words) =>
 /**
  * The cells each side can still move, given a set of locked sides.
  *
- * A lock pins a whole side, so the only cells it takes from a NEIGHBOUR are
- * that neighbour's corners. The free run is therefore always contiguous in
+ * A lock pins a whole side, so the only cells it takes from a NEIGHBOR are
+ * that neighbor's corners. The free run is therefore always contiguous in
  * reading order, which is what lets a drag stay a simple slide along the edge.
  */
 export function freeSlotsFor(board, lockSet) {

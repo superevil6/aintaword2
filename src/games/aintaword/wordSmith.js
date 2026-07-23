@@ -103,7 +103,7 @@ function vowelSwaps(word) {
 
 function degeminations(word) {
   const out = [];
-  // Remove index i when it duplicates its left neighbour. i ranges over
+  // Remove index i when it duplicates its left neighbor. i ranges over
   // interior-or-later positions but never the last, so the tail letter stays.
   const lim = mutableLimit(word);
   for (let i = 1; i < lim; i++) {

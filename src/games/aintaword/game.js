@@ -5,6 +5,7 @@
 // fake and the clock loses a second. When it hits zero, the run is over.
 
 import { Rng } from "../../core/rng.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 import { Countdown } from "../../core/timer.js";
 import { makePair } from "./wordSmith.js";
 import { getDifficulty, DIFFICULTY_ORDER, DIFFICULTIES } from "./difficulty.js";
@@ -28,6 +29,9 @@ export class AintAWordGame {
     this.root = container;
     this.dict = dict;
     this.opts = opts;
+    // Which day's puzzle this is. Today by default; a past day (archive replay,
+    // a supporter perk) is playable but never persisted — see results.js.
+    this.day = opts.day || todayKey();
     this.profile = null; // chosen on the select screen
 
     this.state = "select"; // select | playing | over
@@ -71,7 +75,7 @@ export class AintAWordGame {
   start(difficultyId = this.profile?.id ?? this.opts.difficulty) {
     this.profile = getDifficulty(difficultyId);
     const seed =
-      this.opts.seed != null ? `${this.opts.seed}:${this.profile.id}` : dailySeedFor(this.profile.id);
+      this.opts.seed != null ? `${this.opts.seed}:${this.profile.id}` : dailySeedFor(this.profile.id, this.day);
     this.rng = new Rng(seed);
     this.score = 0;
     this.history = [];
@@ -184,8 +188,8 @@ export class AintAWordGame {
     const id = this.profile.id;
     // Persist before computing the record, so the day's run is locked in even
     // if anything below throws.
-    saveResult(id, { score: this.score, history: this.history });
-    const isRecord = recordBest(id, this.score);
+    saveResult(id, { score: this.score, history: this.history }, this.day);
+    const isRecord = recordBest(id, this.score, this.day);
     this._showGameOver(this.score, bestScore(id), isRecord, { replay: false });
   }
 
@@ -423,7 +427,7 @@ export class AintAWordGame {
     let firstBtn = null;
     for (const id of DIFFICULTY_ORDER) {
       const prof = DIFFICULTIES[id];
-      const done = getResult(id);
+      const done = getResult(id, this.day);
 
       const btn = el("button", `aaw-pick${done ? " is-done" : ""}`);
       btn.type = "button";
@@ -453,7 +457,7 @@ export class AintAWordGame {
 
   // Selecting a difficulty: play it, or show the day's result if already done.
   _choose(id) {
-    const done = getResult(id);
+    const done = getResult(id, this.day);
     if (done) {
       this._showStoredResult(id, done);
     } else {
@@ -509,6 +513,7 @@ export class AintAWordGame {
     card.append(actions);
     this.overlay.appendChild(card);
     btn.focus();
+    announceRoundComplete(this.root);
   }
 }
 

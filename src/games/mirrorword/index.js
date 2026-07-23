@@ -6,6 +6,7 @@
 import "./mirrorword.css";
 import { registerGame } from "../../core/registry.js";
 import { MirrorwordGame } from "./game.js";
+import { todaysResults } from "./results.js";
 
 export default registerGame({
   id: "mirrorword",
@@ -18,6 +19,8 @@ export default registerGame({
     "more, and off the diagonal they count double. Find the highest-scoring " +
     "square you can, up to the day's par. A daily puzzle in three sizes.",
   accent: "#49c6e0",
+  tags: ["word", "grid"],
+  playedToday: () => Object.keys(todaysResults()).length > 0,
 
   async mount(container, opts = {}) {
     // Loaded on demand so the word pool stays out of the initial bundle for

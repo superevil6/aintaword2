@@ -14,7 +14,7 @@ import { registerGame } from "../../core/registry.js";
 import { Dictionary } from "../../core/dictionary.js";
 import { VanityPlateGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
-import { todayKey } from "./results.js";
+import { todayKey, todaysResults } from "./results.js";
 
 // One dictionary can be shared across games; accept an injected one (tests,
 // or a hub that preloads), else lazily create and cache a single instance.
@@ -31,11 +31,13 @@ export default registerGame({
   title: "Vanity Plate",
   tagline: "Three letters, in order. Shortest word wins.",
   description:
-    "Word golf on a licence plate. Every plate hides a word whose three letters " +
+    "Word golf on a license plate. Every plate hides a word whose three letters " +
     "must appear in order — TRK → TRUCK, TREK, TURKEY. Par is the shortest " +
     "everyday word; find a rarer, shorter one for a birdie. Six plates a day, " +
     "scored like a round of golf.",
   accent: "#f4c430",
+  tags: ["word"],
+  playedToday: () => Object.keys(todaysResults()).length > 0,
 
   async mount(container, opts = {}) {
     const day = opts.day ?? todayKey();

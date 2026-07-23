@@ -22,7 +22,11 @@ const dom = new JSDOM(`<!DOCTYPE html><body><div id="app"></div></body>`, {
   url: "http://localhost/",
 });
 const { window } = dom;
-for (const k of ["window", "document", "localStorage", "HTMLElement", "Node"]) {
+// CustomEvent/Event come from jsdom too: lifecycle.js's announceRoundComplete
+// (fired when finish() shows the scorecard) constructs a CustomEvent, and jsdom's
+// dispatchEvent rejects any Event not made from its own window (Node 24 has a
+// global CustomEvent that would shadow it — "parameter 1 is not of type 'Event'").
+for (const k of ["window", "document", "localStorage", "HTMLElement", "Node", "CustomEvent", "Event"]) {
   globalThis[k] = window[k];
 }
 
@@ -30,6 +34,10 @@ const { VanityPlateGame } = await import("../src/games/vanityplate/game.js");
 const { satisfies } = await import("../src/games/vanityplate/engine.js");
 const { DIFFICULTY_ORDER } = await import("../src/games/vanityplate/difficulty.js");
 const { PLATE: DEMO_PLATE, FRAMES: DEMO_FRAMES } = await import("../src/games/vanityplate/tutorial.js");
+const { getResult, saveResult, todayKey } = await import("../src/games/vanityplate/results.js");
+
+// The store persists only "today"; a past date is an ephemeral archive replay.
+const TODAY = todayKey();
 
 // A real dictionary stand-in: the same ENABLE list the app validates against.
 const enable = new Set(
@@ -159,6 +167,19 @@ const parkedLen = () =>
     ok(rel.startsWith("-"), `${id}: a birdie makes the round under par (got "${rel}")`);
     game.destroy();
   }
+}
+
+// ── archive replays (any non-today day) must not persist or clobber today ─────
+{
+  localStorage.clear();
+  const PAST = "2026-01-05";
+  saveResult("easy", { strokes: 30, par: 36, birdies: 1 }, PAST);
+  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
+  ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+  saveResult("easy", { strokes: 34, par: 36, birdies: 0 }, TODAY);
+  ok(getResult("easy", TODAY)?.strokes === 34, "today's result still persists");
+  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+  localStorage.clear();
 }
 
 console.log(`\nVanity Plate e2e: ${pass} passed, ${fail} failed`);

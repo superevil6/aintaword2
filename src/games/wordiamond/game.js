@@ -1,7 +1,8 @@
 // NB: styles are imported by index.js, not here — keeping game.js free of CSS
 // imports is what lets a jsdom harness drive it, the same arrangement the
 // other games use.
-import { MODES, getMode, boardFor, layout, cellCentre } from "./shapes.js";
+import { MODES, getMode, boardFor, layout, cellCenter } from "./shapes.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 import {
   cellsFromWords, readSide, litSides,
   freeSlotsFor, rotateSlots, solutionRemains, scramble,
@@ -113,7 +114,7 @@ export class WordiamondGame {
             // A mode already played today reads back what you did rather than
             // advertising itself — the board is spent, and re-dealing it would
             // make the "one board a day" promise meaningless.
-            const done = getResult(m.id);
+            const done = getResult(m.id, this.day);
             return `
             <li>
               <button class="wd-mode${done ? " is-done" : ""}" type="button" data-mode="${m.id}">
@@ -177,6 +178,7 @@ export class WordiamondGame {
     this.moves = result.moves;
     this.el.share.addEventListener("click", () => this._share());
     this.el.modes.addEventListener("click", () => this.showPicker());
+    announceRoundComplete(this.root);
   }
 
   /** An outline of the board that mode actually plays on. */
@@ -193,8 +195,8 @@ export class WordiamondGame {
     this.mode = getMode(modeId);
     this.board = boardFor(this.mode);
     // Already finished today? Show what happened rather than dealing again.
-    if (hasPlayed(this.mode.id) && !this.opts.replay) {
-      this.showResult(getResult(this.mode.id));
+    if (hasPlayed(this.mode.id, this.day) && !this.opts.replay) {
+      this.showResult(getResult(this.mode.id, this.day));
       return;
     }
     const flat = this.data.WORDS[this.mode.sideLen];
@@ -244,7 +246,7 @@ export class WordiamondGame {
         <p class="wd-note">
           Drag a side to rotate it, tap a tile to nudge it one step, or use the
           arrows at each end. Corners are shared, so every move disturbs two
-          neighbours. The blue word was given to you and never moves. Lock a
+          neighbors. The blue word was given to you and never moves. Lock a
           side once it reads a real word — any real word counts, not just the
           intended one.
         </p>
@@ -403,7 +405,7 @@ export class WordiamondGame {
       const side = this.board.sides[spec.side];
       const slots = side.slots;
       const slot = spec.end === "start" ? slots[0] : slots[slots.length - 1];
-      const c = cellCentre(this.board, size, cell, slot);
+      const c = cellCenter(this.board, size, cell, slot);
       const sign = spec.end === "start" ? -1 : 1;
       const off = cell / 2 + 6 + ARROW_SIZE / 2;
       const btn = this.arrowBtns[i];
@@ -421,8 +423,8 @@ export class WordiamondGame {
   /** Pixel distance between adjacent cells along a side. */
   _stepAlong(slots) {
     const { size, cell } = this._metrics();
-    const a = cellCentre(this.board, size, cell, slots[0]);
-    const b = cellCentre(this.board, size, cell, slots[1]);
+    const a = cellCenter(this.board, size, cell, slots[0]);
+    const b = cellCenter(this.board, size, cell, slots[1]);
     return Math.hypot(b.x - a.x, b.y - a.y) || 1;
   }
 
@@ -571,7 +573,7 @@ export class WordiamondGame {
           moves: this.moves,
           ring: this.board.sides.map((_, i) => readSide(this.board, this.cells, i)),
           rings: this.rings,
-        });
+        }, this.day);
       }
       return;
     }
@@ -732,7 +734,7 @@ export class WordiamondGame {
     const { size, cell } = this._metrics();
     const side = this.board.sides[this.drag.side];
     const slots = this.drag.slots;
-    const first = cellCentre(this.board, size, cell, slots[0]);
+    const first = cellCenter(this.board, size, cell, slots[0]);
     const step = this._stepAlong(slots);
     const span = step * slots.length;
 

@@ -24,6 +24,7 @@ import { makePuzzle, scoreOf } from "./engine.js";
 import { mountTutorial } from "./tutorial.js";
 import { rackFromDay } from "./dailySet.js";
 import { buildShareText, copyToClipboard } from "./share.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 import {
   todayKey,
   dailySeedFor,
@@ -120,7 +121,7 @@ export class RootwordGame {
     let firstBtn = null;
     for (const id of DIFFICULTY_ORDER) {
       const prof = DIFFICULTIES[id];
-      const done = getResult(id);
+      const done = getResult(id, this.day);
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -169,7 +170,7 @@ export class RootwordGame {
 
   start(id) {
     this.profile = getDifficulty(id);
-    const done = getResult(this.profile.id);
+    const done = getResult(this.profile.id, this.day);
     if (done) {
       // Already played today — show the stored result, don't replay. Rebuild
       // the day's puzzle (cheap, deterministic) so the result can still show
@@ -468,8 +469,8 @@ export class RootwordGame {
     const words = this._plantedWords(); // the actual words, so the result can list them
     const branches = this.puzzle.budget - this.budgetLeft;
     const result = { score, par, words, branches };
-    saveResult(this.profile.id, result);
-    recordBest(this.profile.id, { score, branches });
+    saveResult(this.profile.id, result, this.day);
+    recordBest(this.profile.id, { score, branches }, this.day);
     this._showResult(result, { replay: false });
   }
 
@@ -553,6 +554,7 @@ export class RootwordGame {
     });
 
     this.root.appendChild(card);
+    announceRoundComplete(this.root);
   }
 
   async _share(btn, result) {

@@ -17,7 +17,10 @@ const dom = new JSDOM(`<!DOCTYPE html><body><div id="app"></div></body>`, {
   url: "http://localhost/",
 });
 const { window } = dom;
-for (const k of ["window", "document", "localStorage", "HTMLElement", "Node", "KeyboardEvent"]) {
+// CustomEvent/Event come from jsdom too: lifecycle.js's announceRoundComplete
+// constructs a CustomEvent, and jsdom's dispatchEvent rejects any Event not made
+// from its own window (Node 24 has a global CustomEvent that would shadow it).
+for (const k of ["window", "document", "localStorage", "HTMLElement", "Node", "KeyboardEvent", "CustomEvent", "Event"]) {
   globalThis[k] = window[k];
 }
 
@@ -26,7 +29,12 @@ const { WORDS } = await import("../src/data/rootwordPool.js");
 const { DIFFICULTY_ORDER, DIFFICULTIES } = await import("../src/games/mirrorword/difficulty.js");
 const { isSolved, scoreSquare, poolOfLength } = await import("../src/games/mirrorword/engine.js");
 const { buildShareText } = await import("../src/games/mirrorword/share.js");
-const { getResult } = await import("../src/games/mirrorword/results.js");
+const { getResult, saveResult, todayKey } = await import("../src/games/mirrorword/results.js");
+
+// The store persists only "today"; a fixed past date is now an ephemeral archive
+// replay. Drive the persistence tests with the real today so the save path runs,
+// and keep it stable within this run (todayKey is constant during one process).
+const TODAY = todayKey();
 
 let pass = 0, fail = 0;
 const ok = (cond, msg) => { if (cond) { pass++; console.log(`  ✓ ${msg}`); } else { fail++; console.log(`  ✗ ${msg}`); } };
@@ -38,7 +46,7 @@ const mount = (opts = {}) => {
   current?.destroy();
   host().innerHTML = "";
   localStorage.clear();
-  current = new MirrorwordGame(host(), { pool: WORDS, day: "2026-07-22", ...opts });
+  current = new MirrorwordGame(host(), { pool: WORDS, day: TODAY, ...opts });
   return current;
 };
 
@@ -90,15 +98,28 @@ for (const id of DIFFICULTY_ORDER) {
 
   // Finish → result stored; re-mounting the tier shows the stored result.
   g._finish();
-  const stored = getResult(id);
+  const stored = getResult(id, TODAY);
   ok(stored && stored.score === g.puzzle.par && stored.par === g.puzzle.par, "Finish stored best/par");
   ok(host().querySelector(".mw-result-card"), "result screen shown after Finish");
 
   // Share text is spoiler-free: it must contain no row word.
-  const share = buildShareText({ score: stored.score, par: stored.par, size: n, difficultyLabel: id, daily: "2026-07-22", url: "" });
+  const share = buildShareText({ score: stored.score, par: stored.par, size: n, difficultyLabel: id, daily: TODAY, url: "" });
   const leaks = best.some((w) => share.toLowerCase().includes(w));
   ok(!leaks, "share text leaks no answer word");
   ok(scoreSquare(best) === g.puzzle.par, "optimal score equals par (sanity)");
+}
+
+// Archive replays (any non-today day) must not persist or clobber today.
+section("Archive replays are ephemeral");
+{
+  localStorage.clear();
+  const PAST = "2026-01-05";
+  saveResult("easy", { score: 10, par: 20 }, PAST);
+  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
+  ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+  saveResult("easy", { score: 12, par: 20 }, TODAY);
+  ok(getResult("easy", TODAY)?.score === 12, "today's result still persists");
+  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
 }
 
 // Backspace and clear behave.

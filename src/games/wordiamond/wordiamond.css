@@ -1,12 +1,12 @@
 /* Wordiamond — a ring of four words that share their corner letters.
-   Colour carries three unrelated facts here, so each one gets a distinct hue
+   Color carries three unrelated facts here, so each one gets a distinct hue
    AND a distinct treatment, rather than relying on hue alone:
 
      green  the side reads a real word right now  (outline + tint)
      amber  the player has frozen this side       (inner ring)
      blue   the word you were given               (solid fill, reversed text)
 
-   The given/solved pair is the risky one for red-green colour blindness, so
+   The given/solved pair is the risky one for red-green color blindness, so
    "given" is the only solid-filled tile on the board — a difference in form
    that survives any palette. */
 
@@ -89,7 +89,7 @@
   border-radius: 4px;
 }
 
-/* The hollow middle, cut as a facet so the ring reads as a stone. Centred and
+/* The hollow middle, cut as a facet so the ring reads as a stone. Centered and
    diamond-cut rather than a square inset, since the board behind it may be a
    square or a pentagon. */
 .wd-board::before {
@@ -158,7 +158,7 @@
 /* A lock that has ruled out every solution.
  *
  * Red AND dashed. Red-on-green is exactly the pair that disappears under the
- * commonest colour blindness, so the border's SHAPE carries the warning too —
+ * commonest color blindness, so the border's SHAPE carries the warning too —
  * a dashed edge reads as provisional whatever you can see of the hue.
  *
  * is-locked and is-stranded are mutually exclusive in game.js, so this does not
@@ -188,7 +188,7 @@
   transition: transform 190ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
-/* Won: the whole ring resolves to one colour, given tile included — that
+/* Won: the whole ring resolves to one color, given tile included — that
    unification IS the signal. Brightness pulses, never transform: the tiles are
    POSITIONED by transform and animating it would fling them to the origin. */
 .wd-board.is-won .wd-tile {

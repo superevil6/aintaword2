@@ -156,11 +156,11 @@ for (const mode of MODES) {
     }
   }
 
-  // Locks pin corners and narrow their neighbours.
+  // Locks pin corners and narrow their neighbors.
   const free = freeSlotsFor(board, new Set([0]));
   if (free[0].length !== 0) fail(`${mode.id}: a locked side should have no free cells`);
   const narrowed = free.filter((f, i) => i !== 0 && f.length < board.sides[i].slots.length);
-  if (narrowed.length !== 2) fail(`${mode.id}: locking one side should narrow exactly two neighbours`);
+  if (narrowed.length !== 2) fail(`${mode.id}: locking one side should narrow exactly two neighbors`);
 
   // A full turn around a side is the identity.
   const [wordStr, given] = pool[0];

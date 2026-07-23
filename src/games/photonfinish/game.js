@@ -23,6 +23,7 @@ import {
 import { getResult, saveResult, bestResult, recordBest, todayKey } from "./results.js";
 import { buildShareText, copyToClipboard } from "./share.js";
 import { mountTutorial } from "./tutorial.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -56,10 +57,14 @@ export class PhotonFinishGame {
    * @param {object} opts
    * @param {string} opts.difficulty - skip the picker, open straight into a tier
    * @param {string} opts.seed       - seed prefix, for tests
+   * @param {string} opts.day        - archive day "YYYY-MM-DD"; omitted means today
    */
   constructor(container, opts = {}) {
     this.root = container;
     this.opts = opts;
+    // Any non-today day is an ephemeral archive replay (a supporter perk): its
+    // board is loaded normally but its result never persists — see results.js.
+    this.day = opts.day || todayKey();
     this.profile = null;
     this.puzzle = null;
     this.angles = [];
@@ -94,7 +99,7 @@ export class PhotonFinishGame {
     try {
       this.puzzle = practice
         ? getPracticePuzzle(this.profile.id, this.puzzle?.day)
-        : getPuzzle(this.profile.id, this.opts.day);
+        : getPuzzle(this.profile.id, this.day);
     } catch (err) {
       this._showError(err);
       return;
@@ -142,7 +147,7 @@ export class PhotonFinishGame {
     let firstBtn = null;
     for (const id of DIFFICULTY_ORDER) {
       const prof = DIFFICULTIES[id];
-      const done = getResult(id);
+      const done = getResult(id, this.day);
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -342,7 +347,7 @@ export class PhotonFinishGame {
   /**
    * A gate: a short bar with a + or - at its middle.
    *
-   * The sign is the whole readout and it is a glyph, not a colour — a light
+   * The sign is the whole readout and it is a glyph, not a color — a light
    * gate is drawn bright and a dark gate dim, but that difference is decoration
    * over the symbol rather than the thing carrying the meaning. It has to work
    * that way round: the board is nearly black, so "dark" cannot be expressed by
@@ -646,7 +651,7 @@ export class PhotonFinishGame {
   _aimAt(i, point, opts) {
     const e = this.puzzle.emitters[i];
     // Right on top of the emitter there is no meaningful direction to take, and
-    // atan2 would snap wildly to whichever side of the centre the pointer
+    // atan2 would snap wildly to whichever side of the center the pointer
     // wobbled onto.
     if (Math.hypot(point.x - e.x, point.y - e.y) < 1) return false;
     return this._setAngle(i, Math.atan2(point.y - e.y, point.x - e.x), opts);
@@ -791,8 +796,8 @@ export class PhotonFinishGame {
 
   _finish() {
     this.done = true;
-    saveResult(this.profile.id, { solved: true, moves: this.moves });
-    const record = recordBest(this.profile.id, { solved: true, moves: this.moves });
+    saveResult(this.profile.id, { solved: true, moves: this.moves }, this.day);
+    const record = recordBest(this.profile.id, { solved: true, moves: this.moves }, this.day);
     const best = bestResult(this.profile.id);
 
     this.root.classList.add("is-solved");
@@ -839,6 +844,7 @@ export class PhotonFinishGame {
     actions.append(again, pick);
     panel.appendChild(actions);
     this.root.appendChild(panel);
+    announceRoundComplete(this.root);
   }
 
   shareText({ moves, isRecord }) {

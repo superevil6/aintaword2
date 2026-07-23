@@ -11,6 +11,7 @@ import "./numburst.css";
 import { registerGame } from "../../core/registry.js";
 import { NumburstGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
+import { todaysResults } from "./results.js";
 
 export default registerGame({
   id: "numburst",
@@ -24,6 +25,8 @@ export default registerGame({
     "direct hit is never the answer; finding the orb that starts the longest " +
     "cascade is.",
   accent: "#ff8a3d",
+  tags: ["number", "spatial"],
+  playedToday: () => Object.keys(todaysResults()).length > 0,
 
   async mount(container, opts = {}) {
     // No difficulty resolved here: the game opens on its own picker, the same
@@ -33,7 +36,7 @@ export default registerGame({
     // Today's frozen match, if it has been generated. Best-effort: the game
     // regenerates the same boards from the seed when the file is absent, only
     // without a par score.
-    const daily = opts.daily ?? (await loadDay());
+    const daily = opts.daily ?? (await loadDay(opts.day));
     const game = new NumburstGame(container, { ...opts, daily });
     return () => game.destroy();
   },

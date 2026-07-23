@@ -3,9 +3,9 @@
 // Four circles in a row, walked left to right by three presses. It teaches the
 // two things prose is worst at: that a primary is a TOGGLE (the same blue
 // button adds on the way out and removes on the way back), and that your whole
-// trail takes your current colour as you move.
+// trail takes your current color as you move.
 //
-// The row is White → Blue → Green → Yellow, which is exactly the colour the
+// The row is White → Blue → Green → Yellow, which is exactly the color the
 // player holds after 0, 1, 2 and 3 presses — so one array describes both the
 // circles and the walk.
 
@@ -24,7 +24,7 @@ const STEPS = [
 
 const CAPTIONS = [
   "You start on white — all three dots empty, none of the primaries.",
-  "Add blue. Its dot fills, you step across, and your trail takes your colour.",
+  "Add blue. Its dot fills, you step across, and your trail takes your color.",
   "Add yellow. Blue and yellow make green — two dots lit.",
   "Remove blue. Green without blue leaves yellow.",
 ];
@@ -55,7 +55,7 @@ export function mountTutorial(container) {
     <div class="cp-demo-row">
       ${NODES.map((_, i) => {
         // The last circle wears the real board's target treatment, so the walk
-        // reads as "get to that one" rather than an abstract colour exercise.
+        // reads as "get to that one" rather than an abstract color exercise.
         const isGoal = i === NODES.length - 1;
         return `<span class="cp-demo-slot">
           <span class="cp-demo-node${isGoal ? " is-goal" : ""}">${pipsMarkup(NODES[i])}</span>
@@ -86,7 +86,7 @@ export function mountTutorial(container) {
     shownStep = step;
     const playerColor = NODES[step];
     nodes.forEach((node, i) => {
-      // Everything up to and including the player wears the player's colour;
+      // Everything up to and including the player wears the player's color;
       // circles still ahead keep their own.
       const shown = i <= step ? playerColor : NODES[i];
       paintSwatch(node, shown);
@@ -123,7 +123,7 @@ export function mountTutorial(container) {
 
   // Under reduced motion nothing redraws on its own, so the palette toggle
   // sitting right below this demo would otherwise leave it stranded on the
-  // old colours.
+  // old colors.
   const onPalette = () => render(shownStep);
   window.addEventListener(PALETTE_EVENT, onPalette);
 

@@ -241,7 +241,7 @@
 /* Fill hue comes from --nb-hue, set per orb in game.js from its CURRENT value.
  * Lightness and chroma are fixed so only the hue moves: every orb is equally
  * bright, white numerals stay legible from blue through red, and no value
- * needs a special-cased text colour. The plain-colour declaration first is the
+ * needs a special-cased text color. The plain-color declaration first is the
  * fallback for anything without oklch. */
 .nb-orb {
   position: absolute;
@@ -268,7 +268,7 @@
 
 /* No scale on hover. This is a phone game first, where there is no hover at
  * all, and on a densely packed board nudging an orb bigger shoves it visually
- * over its neighbours — it reads as the board twitching rather than as a
+ * over its neighbors — it reads as the board twitching rather than as a
  * highlight. The ring alone marks the target, and it costs no layout. */
 .nb-orb:hover:not(:disabled),
 .nb-orb:focus-visible {
@@ -278,8 +278,8 @@
 
 /* Damaged but alive. The orb keeps its original SIZE while its hue has already
  * dropped to its current value, so a wounded orb is self-evidently too big for
- * its colour. The dashed ring is a second, quieter marker for anyone reading
- * shape before colour — it no longer needs to be alarm-red to do that job. */
+ * its color. The dashed ring is a second, quieter marker for anyone reading
+ * shape before color — it no longer needs to be alarm-red to do that job. */
 .nb-orb.is-hurt {
   border-style: dashed;
   border-color: #ffffff8c;
@@ -317,7 +317,7 @@
 /* ── Impact effects ─────────────────────────────────────────────────────── */
 
 /* Board-coordinate overlay: its viewBox matches the board's own units, so
- * arrows are drawn straight from orb centres and scale with the field. */
+ * arrows are drawn straight from orb centers and scale with the field. */
 .nb-fx {
   position: absolute;
   inset: 0;
@@ -451,7 +451,7 @@
   cursor: pointer;
 }
 
-/* Armed reads as "filled with its own colour" rather than as the site accent,
+/* Armed reads as "filled with its own color" rather than as the site accent,
  * so the chip you picked and the orbs it can kill outright are the same hue. */
 .nb-bomb.is-armed {
   border-color: oklch(0.72 0.17 var(--nb-hue));

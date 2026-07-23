@@ -2,7 +2,7 @@
 //
 // A board is an N-gon with L letters along each edge, adjacent edges SHARING
 // their corner letter. An N-gon therefore holds N*(L-1) cells, not N*L, and
-// rotating one edge drags two neighbours' corners with it — the coupling that
+// rotating one edge drags two neighbors' corners with it — the coupling that
 // makes this a puzzle rather than N independent dials.
 //
 // ── cell numbering ─────────────────────────────────────────────────────────
@@ -225,8 +225,8 @@ export function layout(board, size, cell) {
   }));
 }
 
-/** Centre of a cell, for placing controls relative to it. */
-export function cellCentre(board, size, cell, slot) {
+/** Center of a cell, for placing controls relative to it. */
+export function cellCenter(board, size, cell, slot) {
   const r = (size - cell) / 2;
   const p = board.positions[slot];
   return { x: size / 2 + p.x * r, y: size / 2 + p.y * r };

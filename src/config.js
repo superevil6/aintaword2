@@ -3,10 +3,11 @@
 /**
  * Display name of the site, shown in the top banner on every screen.
  *
- * ── PLACEHOLDER ── change this once you've settled on a name. It is the only
- * place the name appears, so renaming is a one-line change.
+ * The link-preview brand title lives separately in shareManifest.js
+ * (SITE_SHARE.title) so a crawler sees it without running JS — keep the two in
+ * sync when renaming.
  */
-export const SITE_NAME = "Word Games";
+export const SITE_NAME = "Wordems";
 
 /**
  * Canonical public URL of the site, used in "share your score" text.
@@ -20,7 +21,7 @@ export const SITE_NAME = "Word Games";
  *
  * No trailing slash.
  */
-export const SITE_URL = "";
+export const SITE_URL = "https://wordems.com";
 
 // ── Moving to a custom domain (planned: own domain, hosted on Cloudflare) ──
 //
@@ -42,9 +43,9 @@ export const SITE_URL = "";
 //     "Always Use HTTPS" and bulk redirects both preserve it by default; a
 //     hand-written Page Rule with a fixed destination URL does NOT.
 //
-//  4. If staying on GitHub Pages alongside a custom domain, remember the
-//     CNAME file — it must live in public/ so the build copies it into dist/,
-//     otherwise every deploy silently drops the domain setting.
+//  4. Hosting is Cloudflare Pages: the custom domain is added in the Pages
+//     project dashboard (Custom domains → add wordems.com), NOT via a CNAME
+//     file. The public/ CNAME trick was GitHub-Pages-only; don't add one here.
 //
 //  5. Re-check the three URL surfaces afterwards: the address bar while
 //     navigating, the "Share result" text from each game, and a cold load of
@@ -57,6 +58,29 @@ export const SITE_URL = "";
  * `/colorpath` would 404 without an SPA fallback page.
  */
 export const GAME_PARAM = "game";
+
+/**
+ * Query parameter that selects a past day to replay (the archive, a supporter
+ * perk), as "YYYY-MM-DD". Same query-param rationale as GAME_PARAM: it survives
+ * deep links, the back button, and refresh, and a shared archive link works on
+ * any host. Absent means "today's puzzle".
+ */
+export const DAY_PARAM = "day";
+
+/**
+ * Earliest day the archive lets a supporter reach, "YYYY-MM-DD" (UTC).
+ *
+ * Puzzles are seed-derived, so ANY past date regenerates a valid board — this
+ * floor is a product choice (how far back the archive goes), not a technical
+ * limit. Games backed by a prebuilt daily-set file only carry a precomputed par
+ * within their generated range; older days still play, they just fall back to
+ * on-the-fly generation (see e.g. games/numburst/dailySet.js).
+ *
+ * ── SET THIS to the real launch date once the site is public, so the archive
+ * doesn't advertise days from before the game existed. Per-game overrides can
+ * come later if a game launches after this date.
+ */
+export const ARCHIVE_START = "2026-01-01";
 
 /**
  * Direct link to one game, for the "share your result" text.

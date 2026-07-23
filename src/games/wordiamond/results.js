@@ -34,21 +34,32 @@ function readToday() {
   }
 }
 
+// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
+// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
+// unplayed and never writes, so replaying an old board can't overwrite today's
+// result. Persisting past days would be a later "completion history" step;
+// until then archive plays are just-for-fun.
+function isToday(day) {
+  return day === todayKey();
+}
+
 /** All of today's results, keyed by mode id. */
-export function todaysResults() {
+export function todaysResults(day = todayKey()) {
+  if (!isToday(day)) return {};
   return readToday()?.results || {};
 }
 
 /** @returns {{moves:number, ring:string[], rings:number, playedAt:string}|null} */
-export function getResult(mode) {
-  return todaysResults()[mode] || null;
+export function getResult(mode, day = todayKey()) {
+  return todaysResults(day)[mode] || null;
 }
 
-export function hasPlayed(mode) {
-  return getResult(mode) != null;
+export function hasPlayed(mode, day = todayKey()) {
+  return getResult(mode, day) != null;
 }
 
-export function saveResult(mode, { moves, ring, rings }) {
+export function saveResult(mode, { moves, ring, rings }, day = todayKey()) {
+  if (!isToday(day)) return; // ephemeral archive replay — don't persist
   try {
     const data = readToday() || { date: todayKey(), results: {} };
     data.date = todayKey();

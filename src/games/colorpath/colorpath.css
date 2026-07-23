@@ -3,9 +3,9 @@
 /* ── Root shell ──────────────────────────────────────────────────────────── */
 
 .cp {
-  /* Goal marker. Gold rather than a board colour on purpose: the eight cell
-     colours are the game's vocabulary, so a ninth hue reads as "not one of
-     these" — a label rather than another mixable colour. */
+  /* Goal marker. Gold rather than a board color on purpose: the eight cell
+     colors are the game's vocabulary, so a ninth hue reads as "not one of
+     these" — a label rather than another mixable color. */
   --cp-goal: #ffcc4d;
 
   position: relative; /* anchors the win overlay and the difficulty picker */
@@ -19,7 +19,7 @@
   gap: clamp(12px, 2.5vw, 24px);
 }
 
-/* Picker state: no board yet, so centre the card in the available space. */
+/* Picker state: no board yet, so center the card in the available space. */
 .cp--select {
   justify-content: center;
 }
@@ -94,7 +94,7 @@
   border-radius: 50%;
   background: var(--cell-color, #888);
   border: 2px solid transparent;
-  /* Slow enough to read as "the trail is changing colour" rather than a flicker. */
+  /* Slow enough to read as "the trail is changing color" rather than a flicker. */
   transition: background-color 0.35s ease, box-shadow 0.25s ease,
               transform 0.25s ease, border-color 0.25s ease;
 }
@@ -458,7 +458,7 @@
  *
  * Named --burned while the controller has only ever set --visited, so this
  * rule matched nothing and the trail sat at full strength: a block of circles
- * all wearing the player's colour, indistinguishable from live board. Pushing
+ * all wearing the player's color, indistinguishable from live board. Pushing
  * it back is the cue that says "behind you" without spending a hue on it.
  * 0.45 rather than the old 0.35 so the pips stay legible in the trail. */
 .cp-cell--visited {
@@ -481,11 +481,11 @@
  *
  * The pulse is a poor sole carrier: it is motion, which reduced-motion settings
  * switch off; it is a white halo, which reads differently against eight cell
- * colours; and it is easiest to miss exactly when the board is busiest. A shape
+ * colors; and it is easiest to miss exactly when the board is busiest. A shape
  * in the middle of the circle is none of those things.
  *
  * It sits BEHIND the pips rather than replacing them — the pips are the
- * colourblind reading of what a cell is mixed from, and a goal still needs to
+ * colorblind reading of what a cell is mixed from, and a goal still needs to
  * be mixed to. Dark ink on gold keeps them legible. */
 .cp-cell--target::before {
   content: "★";
@@ -496,7 +496,7 @@
   font-size: clamp(18px, 5vw, 34px);
   line-height: 1;
   color: var(--cp-goal);
-  /* Gold on eight different cell colours needs its own edge to sit on. */
+  /* Gold on eight different cell colors needs its own edge to sit on. */
   text-shadow:
     0 0 2px rgba(0, 0, 0, 0.65),
     0 1px 1px rgba(0, 0, 0, 0.45);
@@ -586,7 +586,7 @@
 
 /* Quiet by design. It sits under the controls on the board, where it must not
    compete with them for attention, but it still has to be findable by someone
-   who has just realised they cannot read the circles — so it brightens on
+   who has just realized they cannot read the circles — so it brightens on
    hover and focus rather than hiding until you go looking. */
 .cp-toggle {
   display: flex;
@@ -664,7 +664,7 @@
   transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.15s;
   --result-color: transparent;
   /* Stacked so the button says the same thing three ways: the sign, the pip
-     slot it flips, and the colour's name. Only one of those needs your hue
+     slot it flips, and the color's name. Only one of those needs your hue
      discrimination to be intact. */
   display: grid;
   place-content: center;

@@ -12,8 +12,8 @@
 // compute. So every tier is solved here through the real keyboard path, and
 // the win is read back off the DOM rather than off the object.
 //
-// The second is the non-colour encoding, the same invariant Color Path's e2e
-// guards: an orb's three RYB pips must agree with the colour it is filled
+// The second is the non-color encoding, the same invariant Color Path's e2e
+// guards: an orb's three RYB pips must agree with the color it is filled
 // with. A player who cannot separate the hues is reading the pips, and pips
 // that disagreed with their fill would be worse than no pips at all.
 
@@ -24,9 +24,13 @@ const dom = new JSDOM(`<!DOCTYPE html><body><div id="app"></div></body>`, {
   url: "http://localhost/",
 });
 const { window } = dom;
+// CustomEvent/Event come from jsdom too: lifecycle.js's announceRoundComplete
+// constructs a CustomEvent, and jsdom's dispatchEvent rejects any Event not made
+// from its own window (Node 24 has a global CustomEvent that would shadow it).
 for (const k of [
   "window", "document", "localStorage",
   "requestAnimationFrame", "cancelAnimationFrame", "HTMLElement", "SVGElement", "Node",
+  "CustomEvent", "Event",
 ]) {
   globalThis[k] = window[k];
 }
@@ -37,7 +41,8 @@ const { evaluate, tracePath, normalizeAngle, DEG, TAU } =
   await import("../src/games/photonfinish/optics.js");
 const { NEUTRAL, MAX_LEVEL, LEVEL_NAMES } = await import("../src/games/photonfinish/levels.js");
 const { buildShareText } = await import("../src/games/photonfinish/share.js");
-const { setPuzzleData } = await import("../src/games/photonfinish/board.js");
+const { setPuzzleData, availableDays } = await import("../src/games/photonfinish/board.js");
+const { getResult, saveResult, todayKey } = await import("../src/games/photonfinish/results.js");
 const { PUZZLES } = await import("../src/data/photonfinishPuzzles.js");
 setPuzzleData(PUZZLES); // mount() does this in the app; tests build the game directly
 const { DIFFICULTY_ORDER, DIFFICULTIES } = await import("../src/games/photonfinish/difficulty.js");
@@ -110,7 +115,7 @@ for (const tier of DIFFICULTY_ORDER) {
   ok(app.querySelectorAll(".pf-beam").length === expectedSegments,
     "the beam the screen draws is the beam the optics module computed");
   ok(app.querySelectorAll(".pf-mirror").length === (puzzle.mirror ? 1 : 0),
-    "the centre mirror is drawn");
+    "the center mirror is drawn");
 
   // Solve it through the real pointer path. Pressing a point that lies along
   // the solution ray sets exactly that angle, so this drives the interaction a
@@ -313,6 +318,31 @@ shareGame.angles = shareGame.puzzle.solution.slice();
 shareGame._render();
 ok(app.querySelector(".pf-share") === null, "a solved PRACTICE board does not — nobody else is on it");
 shareGame.destroy();
+
+// ── Archive replays are ephemeral ────────────────────────────────────────────
+//
+// A past day is a supporter-perk replay: playable, but its result must never be
+// stored and must never clobber today's result or the all-time best. The store
+// enforces that; here we drive it directly and also confirm opts.day reaches the
+// board loader.
+
+console.log("\narchive replay:");
+localStorage.clear();
+const TODAY = todayKey();
+const PAST = availableDays().find((d) => d < TODAY) || "2026-01-05";
+
+const replay = new PhotonFinishGame(app, { difficulty: "easy", day: PAST });
+ok(replay.day === PAST, "opts.day is honored");
+ok(replay.puzzle.day === PAST, "the past day's own board is loaded, not today's");
+replay.destroy();
+
+saveResult("easy", { solved: true, moves: 5 }, PAST);
+ok(getResult("easy", PAST) === null, "a past-day result is not stored");
+ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+saveResult("easy", { solved: true, moves: 7 }, TODAY);
+ok(getResult("easy", TODAY)?.moves === 7, "today's result still persists");
+ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+localStorage.clear();
 
 console.log(`\n${fail === 0 ? "✅" : "❌"} ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

@@ -3,10 +3,10 @@
 .hub {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2rem;
+  align-items: stretch;
+  gap: 1.75rem;
   width: 100%;
-  max-width: 640px;
+  max-width: 720px;
   padding: 1rem 0;
 }
 
@@ -30,79 +30,181 @@
   font-size: 1rem;
 }
 
-/* ── Card grid ───────────────────────────────────────────────────────────── */
+/* ── Sections ───────────────────────────────────────────────────────────── */
+
+.hub-section {
+  width: 100%;
+}
+
+.hub-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--fg-dim);
+}
+
+.hub-section-count {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+}
+
+/* ── Tile grid ──────────────────────────────────────────────────────────── */
 
 .hub-grid {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 0.8rem;
   width: 100%;
 }
 
 .hub-card {
-  /* layout */
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  gap: 0.2rem 1rem;
-  width: 100%;
-  padding: 1.1rem 1.4rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-height: 132px;
+  padding: 1rem 1.1rem;
   text-align: left;
+  overflow: hidden;
 
-  /* appearance */
-  background: var(--bg-2);
-  border: 1.5px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+  /* Clear background: the tile shows the page through it, carried only by its
+     accent border and the faded game motif behind the text. */
+  background: transparent;
+  border: 1.5px solid color-mix(in srgb, var(--card-accent) 30%, transparent);
   border-radius: var(--radius);
   color: var(--fg);
   cursor: pointer;
 
-  /* transition */
   transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
 }
 
 .hub-card:hover {
   border-color: var(--card-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px color-mix(in srgb, var(--card-accent) 20%, transparent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--card-accent) 22%, transparent);
 }
 
 .hub-card:active {
   transform: translateY(0);
 }
 
-.hub-card-title {
-  grid-column: 1;
-  grid-row: 1;
-  font-size: 1.15rem;
+.hub-card:focus-visible {
+  outline: 2px solid var(--card-accent);
+  outline-offset: 2px;
+}
+
+/* ── Done today ─────────────────────────────────────────────────────────── */
+/* A finished game stays clickable (today's board can be replayed) but reads as
+   spent, so the eye skips to what's left. Desaturated + dimmed, with a tick. */
+.hub-card.is-done {
+  filter: saturate(0.35);
+  opacity: 0.62;
+}
+.hub-card.is-done:hover {
+  filter: saturate(0.7);
+  opacity: 0.85;
+}
+
+.hub-card-tick {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.7rem;
+  z-index: 1;
+  width: 1.35rem;
+  height: 1.35rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
   font-weight: 700;
+  color: var(--bg);
+  background: var(--card-accent);
+  border-radius: 50%;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The game motif, faded large behind the text. Right-biased so the title and
+   tagline (bottom-left) stay legible over a clear tile. */
+.hub-card-art {
+  position: absolute;
+  top: 50%;
+  right: -0.35rem;
+  transform: translateY(-50%);
+  width: 6.5rem;
+  height: 6.5rem;
   color: var(--card-accent);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+.hub-card-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hub-card:hover .hub-card-art {
+  opacity: 0.24;
+}
+
+/* Fallback when a game has no motif: its oversized initial in the corner. */
+.hub-card-glyph {
+  position: absolute;
+  top: -0.55rem;
+  right: 0.3rem;
+  font-size: 4.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: color-mix(in srgb, var(--card-accent) 24%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+
+.hub-card-title {
+  position: relative;
+  z-index: 1;
+  font-size: 1.12rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  color: var(--card-accent);
 }
 
 .hub-card-tagline {
-  grid-column: 1;
-  grid-row: 2;
-  font-size: 0.9rem;
+  position: relative;
+  z-index: 1;
+  font-size: 0.82rem;
   color: var(--fg-dim);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-.hub-card-play {
-  grid-column: 2;
-  grid-row: 1 / 3;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--card-accent);
-  opacity: 0.7;
-  transition: opacity 0.15s, transform 0.15s;
-  white-space: nowrap;
-}
-
-.hub-card:hover .hub-card-play {
-  opacity: 1;
-  transform: translateX(3px);
+@media (prefers-reduced-motion: reduce) {
+  .hub-card {
+    transition: border-color 0.15s;
+  }
+  .hub-card:hover {
+    transform: none;
+  }
 }

@@ -25,7 +25,7 @@ import { satisfies } from "../src/games/vanityplate/engine.js";
 import { DIFFICULTIES, DIFFICULTY_ORDER, HOLES } from "../src/games/vanityplate/difficulty.js";
 import {
   loadPools,
-  analyse,
+  analyze,
   passesFairness,
   birdieLenFor,
   isCleanPlate,
@@ -35,11 +35,11 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(dir, "..", "public/data/vanityplate");
 
 const { enable, enableArr, famTier, familiar } = loadPools();
-const analyseCache = new Map();
+const analyzeCache = new Map();
 const birdieCache = new Map();
 const statsFor = (plate) => {
-  if (!analyseCache.has(plate)) analyseCache.set(plate, analyse(plate, familiar, famTier));
-  return analyseCache.get(plate);
+  if (!analyzeCache.has(plate)) analyzeCache.set(plate, analyze(plate, familiar, famTier));
+  return analyzeCache.get(plate);
 };
 
 let pass = 0;

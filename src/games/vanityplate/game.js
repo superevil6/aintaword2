@@ -23,6 +23,7 @@ import { courseFor } from "./dailySet.js";
 import { mountTutorial } from "./tutorial.js";
 import { matchPositions, litCount, isLegal, scoreLabel } from "./engine.js";
 import { buildShareText, copyToClipboard } from "./share.js";
+import { announceRoundComplete } from "../../core/lifecycle.js";
 import {
   todayKey,
   getResult,
@@ -80,7 +81,7 @@ export class VanityPlateGame {
       const d = DIFFICULTIES[id];
       const course = courseFor(this.data, id);
       const par = course?.par;
-      const res = getResult(id);
+      const res = getResult(id, this.day);
       let status = par != null ? `par ${par}` : "—";
       if (res) {
         const diff = res.strokes - res.par;
@@ -312,8 +313,8 @@ export class VanityPlateGame {
     const rel = diff === 0 ? "even par" : diff > 0 ? `+${diff}` : `${diff}`;
     const grid = this.results.map((r) => r.lab.grid).join("");
 
-    saveResult(this.profile.id, { strokes, par, birdies });
-    const record = recordBest(this.profile.id, { strokes, par, birdies });
+    saveResult(this.profile.id, { strokes, par, birdies }, this.day);
+    const record = recordBest(this.profile.id, { strokes, par, birdies }, this.day);
 
     const rows = this.results
       .map(
@@ -375,5 +376,6 @@ export class VanityPlateGame {
         if (this.root.querySelector("#vp-share") === btn) btn.textContent = "Copy scorecard";
       }, 2000);
     });
+    announceRoundComplete(this.root);
   }
 }

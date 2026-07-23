@@ -7,7 +7,7 @@
 //      is 11 letters and instantly recognizable, while "opuses" is 6 and
 //      baffling. Length alone would make Hard longer but not really harder.
 //
-// A third knob, `subtlety`, biases which transformations the generator favours
+// A third knob, `subtlety`, biases which transformations the generator favors
 // (see SUBTLETY in wordSmith.js): low values prefer obvious fakes, high values
 // prefer the ones people actually fall for.
 //

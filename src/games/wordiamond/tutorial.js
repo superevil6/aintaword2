@@ -8,7 +8,7 @@
 // It teaches three things in order:
 //   1. rotating a side slides its letters along it, and they wrap
 //   2. a side that reads a real word lights up, and can be locked
-//   3. a locked side pins the shared corner, so its neighbour then turns with
+//   3. a locked side pins the shared corner, so its neighbor then turns with
 //      only its free letters — which is why locking is the tool that makes the
 //      game solvable rather than a convenience
 //
@@ -133,7 +133,7 @@ export function mountTutorial(container) {
       tile.classList.add("is-sliding");
       tile.style.transform = axis === "x" ? "translateX(100%)" : "translateY(100%)";
       // The tile running off the end is the one arriving at the other, so it
-      // fades rather than sliding through its neighbours.
+      // fades rather than sliding through its neighbors.
       if (i === slots.length - 1) tile.style.opacity = "0";
     });
     after(SLIDE_MS, next);

@@ -33,21 +33,32 @@ function readToday() {
   }
 }
 
+// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
+// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
+// unplayed and never writes, so replaying an old run can't overwrite today's
+// result or pollute the all-time best. Persisting past days is the later
+// "completion history" step; until then archive plays are just-for-fun.
+function isToday(day) {
+  return day === todayKey();
+}
+
 /** All of today's results, keyed by difficulty id. */
-export function todaysResults() {
+export function todaysResults(day = todayKey()) {
+  if (!isToday(day)) return {};
   return readToday()?.results || {};
 }
 
 /** @returns {{score:number, history:Array, playedAt:string}|null} */
-export function getResult(difficulty) {
-  return todaysResults()[difficulty] || null;
+export function getResult(difficulty, day = todayKey()) {
+  return todaysResults(day)[difficulty] || null;
 }
 
-export function hasPlayed(difficulty) {
-  return getResult(difficulty) != null;
+export function hasPlayed(difficulty, day = todayKey()) {
+  return getResult(difficulty, day) != null;
 }
 
-export function saveResult(difficulty, { score, history }) {
+export function saveResult(difficulty, { score, history }, day = todayKey()) {
+  if (!isToday(day)) return; // ephemeral archive replay — don't persist
   try {
     const data = readToday() || { date: todayKey(), results: {} };
     data.date = todayKey();
@@ -74,7 +85,8 @@ export function bestScore(difficulty) {
 }
 
 /** Records a new best if it beats the old one. @returns {boolean} was it a record */
-export function recordBest(difficulty, score) {
+export function recordBest(difficulty, score, day = todayKey()) {
+  if (!isToday(day)) return false; // archive replays don't set all-time records
   const prev = bestScore(difficulty);
   if (score <= prev) return false;
   try {

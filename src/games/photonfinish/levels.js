@@ -1,14 +1,14 @@
 // Photon Finish — brightness levels.
 //
-// Replaces the old RYB colour system. A beam carries one integer, its
+// Replaces the old RYB color system. A beam carries one integer, its
 // brightness, and everything on the board either raises it or lowers it.
 //
 //   0 ── 1 ── 2 ── 3 ── 4
 //   dark      neutral    bright
 //
-// ── Why a number and not a colour ──────────────────────────────────────────
+// ── Why a number and not a color ──────────────────────────────────────────
 //
-// The colour version had eight states and a three-bit algebra, and the honest
+// The color version had eight states and a three-bit algebra, and the honest
 // result was that nobody planned with it: working out "what will my beam be
 // after that gate" required simulating a bitmask in your head, so players
 // swept the beam around and watched for the goal to light up instead. A single
@@ -97,7 +97,7 @@ export function levelHex(level) {
 }
 
 /**
- * Beam colour: brightness by lightness, and a faint tint saying WHICH beam.
+ * Beam color: brightness by lightness, and a faint tint saying WHICH beam.
  *
  * The tint carries no rules at all — brightness is still the whole mechanic,
  * and it is still read from lightness, thickness and the numerals. Hue here
@@ -106,7 +106,7 @@ export function levelHex(level) {
  * the first question, and two white lines cannot answer it.
  *
  * Kept weak on purpose. These have to read as tinted white light, not as the
- * coloured lasers this game deliberately stopped being.
+ * colored lasers this game deliberately stopped being.
  */
 const BEAM_TINTS = [
   ["#4f5f70", "#6b8496", "#8fb3c6", "#bcdcea", "#e8f8ff"], // beam 1, cool

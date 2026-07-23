@@ -2,7 +2,7 @@
 //
 //   node scripts/e2e-colorpath.mjs
 //
-// The focus is the non-colour encoding: every circle carries three pips saying
+// The focus is the non-color encoding: every circle carries three pips saying
 // which of red/yellow/blue it is mixed from, and that is the reading a player
 // who cannot separate the hues depends on. A pip row that disagreed with its
 // fill would be worse than no pips at all, so the invariant asserted here is
@@ -15,9 +15,13 @@ const dom = new JSDOM(`<!DOCTYPE html><body><div id="app"></div></body>`, {
   url: "http://localhost/",
 });
 const { window } = dom;
+// CustomEvent/Event come from jsdom too: lifecycle.js's announceRoundComplete
+// constructs a CustomEvent, and jsdom's dispatchEvent rejects any Event not made
+// from its own window (Node 24 has a global CustomEvent that would shadow it).
 for (const k of [
   "window", "document", "localStorage",
   "requestAnimationFrame", "cancelAnimationFrame", "HTMLElement",
+  "CustomEvent", "Event",
 ]) {
   globalThis[k] = window[k];
 }
@@ -25,6 +29,11 @@ for (const k of [
 const { ColorPathGame } = await import("../src/games/colorpath/game.js");
 const { COLOR_NAMES, PRIMARIES, colorHex, paletteId } =
   await import("../src/games/colorpath/colors.js");
+const { getResult, saveResult, recordBest, todayKey } =
+  await import("../src/games/colorpath/results.js");
+
+// The store persists only "today"; a past date is an ephemeral archive replay.
+const TODAY = todayKey();
 
 const ALL_COLORS = COLOR_NAMES.map((_, i) => i);
 
@@ -34,7 +43,7 @@ const ok = (cond, msg) => {
   else      { fail++; console.log(`  ✗ ${msg}`); }
 };
 
-/** The colour a cell's pips claim, read back out of the DOM. */
+/** The color a cell's pips claim, read back out of the DOM. */
 function pipColor(cell) {
   const pips = [...cell.querySelectorAll(".cp-pip")];
   if (pips.length !== PRIMARIES.length) return null;
@@ -44,7 +53,7 @@ function pipColor(cell) {
   );
 }
 
-/** Every playable cell's pips agree with the colour it is actually showing. */
+/** Every playable cell's pips agree with the color it is actually showing. */
 function pipsMatchFill(game) {
   const mismatches = [];
   game._cells.forEach((cell, idx) => {
@@ -82,7 +91,7 @@ ok(cells.every((c, i) => game.grid.isObstacle(i) || c.querySelectorAll(".cp-pip"
   "every playable circle carries three pips");
 ok(pipsMatchFill(game).length === 0, "pips agree with fills on the opening board");
 ok(cells.every((c, i) => game.grid.isObstacle(i) || c.style.getPropertyValue("--cell-ink")),
-  "every circle sets an ink colour for its pips");
+  "every circle sets an ink color for its pips");
 
 console.log("\nprimary buttons:");
 const btns = game._primaryBtns;
@@ -113,10 +122,10 @@ ok(drift === null, drift ? `pips drifted from fills — ${drift[0]}` : "pips tra
 
 const current = cells[game.grid.currentIndex];
 ok(pipColor(current) === game.grid.currentColor,
-  "the circle you are standing on spells out the colour you are carrying");
+  "the circle you are standing on spells out the color you are carrying");
 ok(sawRemove, "a primary you already hold flips to − while you are carrying it");
 
-console.log("\ncolourblind palette toggle:");
+console.log("\ncolorblind palette toggle:");
 const toggle = app.querySelector(".cp-toggle-box");
 ok(!!toggle, "the board carries the toggle, so you need not abandon a run to reach it");
 ok(paletteId() === "classic", "defaults to the classic mixing palette");
@@ -138,7 +147,7 @@ ok(btns.every((b, i) => b.style.getPropertyValue("--primary-color") !== before.p
   "the control buttons swap too, rather than stranding on the old palette");
 ok(pipsMatchFill(game).length === 0, "pips still agree with fills after the swap");
 ok(cells.every((c, i) => pipColor(c) === before.pips[i]),
-  "the pips themselves are unchanged — the swap is colour only");
+  "the pips themselves are unchanged — the swap is color only");
 ok(game.grid.moves === before.moves, "the run in progress survives the swap");
 
 toggle.checked = false;
@@ -164,6 +173,23 @@ ok(app.querySelector(".cp-toggle-box").checked,
   "a board built while it is on comes up with the box already checked");
 ok(pipsMatchFill(returning).length === 0, "and its pips agree with its fills");
 returning.destroy();
+
+console.log("\narchive replays are ephemeral:");
+{
+  localStorage.clear();
+  const PAST = "2026-01-05";
+  // A past-day play must never persist or leak into today's stored result.
+  saveResult("easy", { moves: 7, timeMs: 5000 }, PAST);
+  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
+  ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+  ok(recordBest("easy", { moves: 1, timeMs: 100 }, PAST) === false,
+    "a past-day play never sets an all-time best");
+  // Today still persists normally.
+  saveResult("easy", { moves: 9, timeMs: 6000 }, TODAY);
+  ok(getResult("easy", TODAY)?.moves === 9, "today's result still persists");
+  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+  localStorage.clear();
+}
 
 console.log(`\n${fail === 0 ? "✅" : "❌"} ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

@@ -62,23 +62,23 @@ export function generateGrid(size, targetCount, rng) {
     colors[gridPath[i]] = colorPath[i];
   }
 
-  // The start has two orthogonal neighbours but the solution path only leaves
-  // through one. Colour the other one a *different* primary so the opening move
+  // The start has two orthogonal neighbors but the solution path only leaves
+  // through one. Color the other one a *different* primary so the opening move
   // is a genuine choice of direction rather than a single forced option.
   //
-  // From WHITE every primary is one press away, so a neighbour painted primary
+  // From WHITE every primary is one press away, so a neighbor painted primary
   // b is always reachable by pressing b — two distinct primaries means two live
   // buttons on move one.
   //
   // This used to hard-code the cell below the start, which was only ever the
   // off-path one back when the path was right/down-only. A wandering path
   // leaves downward just as often, and then the cell to the right was left to
-  // the greedy fill — which paints from all eight colours, frequently stranding
+  // the greedy fill — which paints from all eight colors, frequently stranding
   // the player with exactly one legal opening.
   const pathCells = new Set(gridPath);
   const exitColor = colors[gridPath[1]];
   for (const idx of orthogonalNeighbors(0, size)) {
-    if (pathCells.has(idx)) continue; // its colour belongs to the colour walk
+    if (pathCells.has(idx)) continue; // its color belongs to the color walk
     const used = neighborColors(idx, size, colors);
     const free = PRIMARY_BITS.filter(c => !used.has(c) && c !== exitColor);
     colors[idx] = free.length > 0
@@ -138,8 +138,8 @@ function buildPath(size, targetCount, rng) {
     const quads = new Set(path.map(i => quadrantOf(i, size)));
     if (quads.size !== 4) continue;
 
-    // Leave at least one of the start's two neighbours off-path. If the walk
-    // claims both, the colour walk owns both of their colours and there is no
+    // Leave at least one of the start's two neighbors off-path. If the walk
+    // claims both, the color walk owns both of their colors and there is no
     // way to guarantee a second live primary on move one — the player opens
     // with a single forced move and learns nothing from it.
     const visited = new Set(path);
@@ -153,10 +153,10 @@ function buildPath(size, targetCount, rng) {
 
 /**
  * Randomised self-avoiding walk using Warnsdorff's rule — step to the
- * neighbour with the fewest onward moves, breaking ties at random.
+ * neighbor with the fewest onward moves, breaking ties at random.
  *
  * A purely random choice dead-ends almost immediately in a corner; preferring
- * the most constrained neighbour keeps the walk hugging unexplored space and
+ * the most constrained neighbor keeps the walk hugging unexplored space and
  * produces the long, winding routes the puzzle needs.
  */
 function randomWalk(size, rng, maxLen) {
@@ -200,7 +200,7 @@ function perimeterPath(size) {
  * Seed one target per quadrant, then fill any remaining slots by greedy
  * farthest-point selection.
  *
- * Both stages maximise the distance to the targets already chosen. Picking by
+ * Both stages maximize the distance to the targets already chosen. Picking by
  * path order instead is what produces a diagonal streak of targets, because
  * path order correlates with position — the spacing has to be measured in grid
  * space, not path space.
@@ -290,7 +290,7 @@ function manhattan(a, b, size) {
  * Math.random() here and silently broke that.
  */
 function scatterObstacles(size, gridPath, targets, rng) {
-  // The start's neighbours are never eligible: walling one off silently undoes
+  // The start's neighbors are never eligible: walling one off silently undoes
   // the opening-choice guarantee above.
   const blocked = new Set([
     ...gridPath,
