@@ -49,16 +49,18 @@ export function satisfies(word, plate) {
 }
 
 /**
- * A guess is legal for a hole when it is at least three letters, it satisfies
- * the plate, and it is a real word. Validity is the caller's dictionary — the
- * engine stays data-free.
+ * A guess is legal for a hole when it is at least four letters, it satisfies
+ * the plate, and it is a real word. Three-letter words are suppressed: the only
+ * 3-letter word that can satisfy a 3-letter plate is the plate spelled out, so
+ * allowing them just hands out a trivial birdie. Validity is the caller's
+ * dictionary — the engine stays data-free.
  * @param {string} word
  * @param {string} plate
  * @param {(w:string)=>boolean} isWord
  */
 export function isLegal(word, plate, isWord) {
   const w = word.trim().toLowerCase();
-  return w.length >= 3 && satisfies(w, plate) && isWord(w);
+  return w.length >= 4 && satisfies(w, plate) && isWord(w);
 }
 
 // Golf naming for a hole's result, keyed on strokes-minus-par.

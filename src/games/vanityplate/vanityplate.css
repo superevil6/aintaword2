@@ -260,6 +260,34 @@
 }
 .vp-go:disabled { opacity: 0.35; cursor: default; }
 
+/* On-screen keyboard — hidden by default; game.js reveals it only on touch. */
+.vp-keyboard { display: none; }
+.vp.vp-has-kb .vp-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 16px 0 4px;
+  touch-action: manipulation;
+}
+.vp-kbrow { display: flex; justify-content: center; gap: 5px; }
+.vp-key {
+  flex: 1 1 0;
+  min-width: 0;
+  font: inherit;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 0;
+  border-radius: 8px;
+  border: 0;
+  background: #2c313b;
+  color: var(--vp-ink);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.vp-key:active { background: var(--vp-line); color: #241c00; }
+.vp-key-back { flex: 1.4 1 0; background: #3a4048; }
+
 .vp-len { text-align: center; font-size: 13px; color: var(--vp-dim); min-height: 18px; }
 .vp-len .over { color: var(--vp-bogey); }
 .vp-len .par { color: var(--vp-ok); }

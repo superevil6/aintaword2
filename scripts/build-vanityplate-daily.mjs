@@ -24,9 +24,12 @@
 //     first word you think of is usually beatable — the whole point), AND
 //   • enough satisfying words overall (difficulty's minWords).
 //
-// NOTE: no function-word stripping. The fake-spotting game strips stopwords, but
-// here short common words (COL, OAT, NEE) are ideal answers — excluding them
-// would inflate par and turn the obvious word into a bogus "birdie".
+// NOTE: no function-word stripping, but there IS a hard length floor of 4 (see
+// engine.isLegal and lib-vanityplate loadPools). A 3-letter word can only
+// satisfy a 3-letter plate by BEING the plate spelled out, so it never adds a
+// genuine second way to hit par — it just hands out a trivial birdie. Four+
+// common words (OATH, KNEE) are the ideal answers here; three-letter words are
+// suppressed everywhere, so par and birdie are both computed over length ≥ 4.
 //
 // IMMUTABILITY: an existing day file is never overwritten without --force, so
 // regenerating after a filter change cannot alter a day already played.

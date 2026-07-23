@@ -34,14 +34,15 @@ const { MODES, boardFor } = await import("../src/games/wordiamond/shapes.js");
 const { readSide, freeSlotsFor, rotateSlots, solutionRemains } =
   await import("../src/games/wordiamond/ring.js");
 const { buildShareText } = await import("../src/games/wordiamond/share.js");
-const { clearResults, getResult, hasPlayed, saveResult, todayKey } =
+const { getResult, hasPlayed, playedDates, saveResult, todayKey } =
   await import("../src/games/wordiamond/results.js");
 const { FRAMES, CAPTIONS } = await import("../src/games/wordiamond/tutorial.js");
 
-// The store persists only "today"; a fixed past date is now an ephemeral archive
-// replay. Drive the persistence tests with the real today so the save path runs,
-// and keep it stable within this run (todayKey is constant during one process).
+// The store now persists EVERY day, keyed by date — today and any archive replay
+// alike. Use the real today for the through-the-UI save path, and a fixed past
+// date for the persistence tests. todayKey is constant during one process.
 const TODAY = todayKey();
+const PAST = "2026-01-05";
 
 let pass = 0, fail = 0;
 const ok = (cond, msg) => {
@@ -66,7 +67,7 @@ const mount = (opts = {}) => {
 
 // Every mode-level test below deals a fresh board, so results must not leak
 // between them — a stored win would make the next mount show a result screen.
-const fresh = (opts = {}) => { clearResults(); return mount(opts); };
+const fresh = (opts = {}) => { localStorage.clear(); return mount(opts); };
 
 /** Shortest route to any valid ring, as a list of moves. */
 function solvePath(g) {
@@ -118,7 +119,7 @@ game.destroy();
 // only place most players will ever learn it exists.
 section("picker demo");
 {
-  clearResults();
+  localStorage.clear();
   const g = mount();
   const demo = host().querySelector(".wd-demo");
   ok(demo !== null, "the demo mounts on the picker");
@@ -162,7 +163,7 @@ section("picker demo");
   g.start("easy");
   ok(host().querySelector(".wd-demo") === null, "the demo is torn down on entering a mode");
   g.destroy();
-  clearResults();
+  localStorage.clear();
 }
 
 // ── every mode, end to end ─────────────────────────────────────────────────
@@ -323,7 +324,7 @@ section("frozen daily boards");
 // that has ended their run.
 section("dead-end locks");
 {
-  clearResults();
+  localStorage.clear();
   const g = mount({ mode: "medium" });
   const board = g.board;
 
@@ -370,7 +371,7 @@ section("dead-end locks");
       "unlocking clears the warning everywhere");
   }
   g.destroy();
-  clearResults();
+  localStorage.clear();
 }
 
 // ── a released drag settles without replaying itself ───────────────────────
@@ -379,7 +380,7 @@ section("dead-end locks");
 // and redoing the move.
 section("drag settling");
 {
-  clearResults();
+  localStorage.clear();
   const g = mount({ mode: "medium" });
   const spin = g.board.sides.map((_, i) => i).find((i) => i !== g.given);
   const slots = freeSlotsFor(g.board, g.locked)[spin];
@@ -406,7 +407,7 @@ section("drag settling");
     "a button or keyboard move still animates, having shown no preview");
   ok(g.moves === before + 1, "and counts too");
   g.destroy();
-  clearResults();
+  localStorage.clear();
 }
 
 // ── a finished board is not dealt twice ────────────────────────────────────
@@ -414,7 +415,7 @@ section("drag settling");
 // shows what you did rather than handing you the same puzzle again.
 section("finished boards");
 {
-  clearResults();
+  localStorage.clear();
   const mode = MODES[0];
   const board = boardFor(mode);
   let g = mount({ mode: mode.id });
@@ -453,30 +454,49 @@ section("finished boards");
   ok([...host().querySelectorAll(".wd-mode")].filter((b) => !b.classList.contains("is-done")).length
      === MODES.length - 1, "the other difficulties are still open");
 
-  // Yesterday's results must not count as today's.
+  // Results are filed per date: today's is live for today and nowhere else.
   ok(hasPlayed(mode.id, TODAY), "the result is live for today");
-  const raw = JSON.parse(localStorage.getItem("aintaword2:wordiamond:daily"));
-  raw.date = "2020-01-01";
-  localStorage.setItem("aintaword2:wordiamond:daily", JSON.stringify(raw));
-  ok(!hasPlayed(mode.id, TODAY), "but a stale day self-prunes to empty");
-  clearResults();
+  ok(!hasPlayed(mode.id, "2020-01-01"), "and does not count as any other day's");
+  localStorage.clear();
 }
 
-// ── archive replays are ephemeral ──────────────────────────────────────────
-// A past day (a supporter archive replay) is playable but must never persist,
-// nor clobber today's stored result.
-section("archive replays are ephemeral");
+// ── archive replays persist per date ───────────────────────────────────────
+// A past day (a supporter archive replay) is recorded under its own date: it
+// earns a completion dot, is retrievable on its return, and can never clobber
+// today's stored result.
+section("archive replays persist per date");
 {
-  clearResults();
+  localStorage.clear();
   const mode = MODES[0];
-  const PAST = "2026-01-05";
-  saveResult(mode.id, { moves: 3, ring: ["a", "b"], rings: 1 }, PAST);
-  ok(getResult(mode.id, PAST) === null, "a past-day result is not stored");
-  ok(getResult(mode.id, TODAY) === null, "playing a past day doesn't leak into today");
-  saveResult(mode.id, { moves: 5, ring: ["c", "d"], rings: 1 }, TODAY);
-  ok(getResult(mode.id, TODAY)?.moves === 5, "today's result still persists");
-  ok(getResult(mode.id, PAST) === null, "today's result doesn't appear under a past day");
-  clearResults();
+  saveResult(mode.id, { moves: 3, ring: ["one", "two"], rings: 1 }, PAST);
+  ok(getResult(mode.id, PAST)?.moves === 3, "a past-day result is stored under its own date");
+  ok(getResult(mode.id, PAST).ring.join(" ") === "one two", "with the ring the player landed on");
+  ok(getResult(mode.id, TODAY) === null, "and does not leak into today");
+
+  saveResult(mode.id, { moves: 5, ring: ["red", "sky"], rings: 1 }, TODAY);
+  ok(getResult(mode.id, TODAY)?.moves === 5, "today's result persists alongside it");
+  ok(getResult(mode.id, PAST)?.moves === 3, "without overwriting the past day");
+
+  // Both dates now show as played — this is what the archive calendar reads.
+  const played = playedDates();
+  ok(played.includes(PAST) && played.includes(TODAY), "playedDates() lists both dates");
+  localStorage.clear();
+}
+
+// ── the old single-day blob migrates in place ──────────────────────────────
+// The store reuses the old key, so a returning player's last "today" result is
+// folded into the per-date history rather than dropped on the upgrade.
+section("legacy migration");
+{
+  localStorage.clear();
+  const mode = MODES[0];
+  localStorage.setItem("aintaword2:wordiamond:daily", JSON.stringify({
+    date: PAST,
+    results: { [mode.id]: { moves: 7, ring: ["old", "one"], rings: 1, playedAt: "2026-01-05T00:00:00.000Z" } },
+  }));
+  ok(getResult(mode.id, PAST)?.moves === 7, "an old { date, results } blob reads under its date");
+  ok(playedDates().includes(PAST), "and the migrated day counts as played");
+  localStorage.clear();
 }
 
 // ── back to the picker, and teardown ───────────────────────────────────────

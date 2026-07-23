@@ -1,12 +1,17 @@
 // Per-day, per-difficulty result storage for Vanity Plate.
 //
-// Mirrors games/numburst/results.js, but Vanity Plate is GOLF: lower is better.
-// A result is the round's total strokes against the course par; "better" means
-// fewer strokes, ties broken by more birdies.
+// Thin adapter over core/history.js, which now persists EVERY day's results (not
+// just today) in one uniform store — see that file for the schema and the reason
+// it is shared. Archive replays of past days are recorded under their own date,
+// so completing an old course earns a completion dot and can never overwrite
+// today's scorecard. Vanity Plate is GOLF: lower is better — a result is the
+// round's total strokes against course par, ties broken by more birdies. All-time
+// best (below) stays a separate, game-owned key.
 
 import { todayKey } from "../../core/daily.js";
+import { dayResults, getResult as histGet, putResult, playedDates as histDates } from "../../core/history.js";
 
-const KEY = "aintaword2:vanityplate:daily";
+const GAME = "vanityplate";
 const BEST_KEY = "aintaword2:vanityplate:best";
 
 export { todayKey };
@@ -16,53 +21,31 @@ export function dailySeedFor(difficulty, day = todayKey()) {
   return `vanityplate:${day}:${difficulty}`;
 }
 
-function readToday() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data || data.date !== todayKey()) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
-// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
-// unplayed and never writes, so replaying an old course can't overwrite today's
-// scorecard or pollute the all-time best. Persisting past days is the later
-// "completion history" step; until then archive plays are just-for-fun.
-function isToday(day) {
-  return day === todayKey();
-}
-
+/** All of a day's results, keyed by difficulty id. Defaults to today. */
 export function todaysResults(day = todayKey()) {
-  if (!isToday(day)) return {};
-  return readToday()?.results || {};
+  return dayResults(GAME, day);
 }
 
 /** @returns {{strokes:number, par:number, birdies:number, playedAt:string}|null} */
 export function getResult(difficulty, day = todayKey()) {
-  return todaysResults(day)[difficulty] || null;
+  return histGet(GAME, difficulty, day);
 }
 
 export function saveResult(difficulty, { strokes, par, birdies }, day = todayKey()) {
-  if (!isToday(day)) return; // ephemeral archive replay — don't persist
-  try {
-    const data = readToday() || { date: todayKey(), results: {} };
-    data.date = todayKey();
-    data.results[difficulty] = {
-      strokes,
-      par,
-      birdies,
-      playedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(KEY, JSON.stringify(data));
-  } catch {
-    /* private mode / quota — the run just won't persist */
-  }
+  putResult(
+    GAME,
+    difficulty,
+    { strokes, par, birdies, playedAt: new Date().toISOString() },
+    day,
+  );
 }
+
+/** Every date this game has been completed on — for the archive's played marks. */
+export function playedDates() {
+  return histDates(GAME);
+}
+
+// --- all-time best, per difficulty (separate from per-day history) -----------
 
 export function bestResult(difficulty) {
   try {
@@ -76,8 +59,7 @@ export function bestResult(difficulty) {
 }
 
 /** @returns {boolean} was it a personal record (fewer strokes, or more birdies on a tie) */
-export function recordBest(difficulty, { strokes, par, birdies }, day = todayKey()) {
-  if (!isToday(day)) return false; // archive replays don't set all-time records
+export function recordBest(difficulty, { strokes, par, birdies }) {
   const prev = bestResult(difficulty);
   const better =
     !prev ||

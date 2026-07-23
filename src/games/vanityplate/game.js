@@ -34,6 +34,20 @@ import {
 
 const MAX_HINTS = 2; // per hole; each reveals one more letter for +1 stroke
 
+// On-screen keyboard rows. Only mounted on touch devices, where it replaces the
+// OS keyboard (which we suppress via inputmode="none" so it can't cover the plate).
+const KB_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+
+// Coarse pointer ⇒ treat as touch. Guarded so the jsdom e2e harness (no matchMedia)
+// simply falls through to the physical-keyboard path.
+function isTouchDevice() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
 export class VanityPlateGame {
   /**
    * @param {HTMLElement} container
@@ -183,6 +197,17 @@ export class VanityPlateGame {
           <button class="vp-hintbtn" id="vp-hintbtn" type="button">Stuck? Reveal a letter (+1)</button>
           <button class="vp-drive" id="vp-drive" type="button" hidden>${last ? "Finish round →" : "Drive on →"}</button>
         </div>
+        <div class="vp-keyboard" id="vp-kb" aria-hidden="true">${KB_ROWS.map(
+          (row) =>
+            `<div class="vp-kbrow">${row
+              .split("")
+              .map((ch) => `<button type="button" class="vp-key" data-k="${ch}">${ch}</button>`)
+              .join("")}${
+              row === KB_ROWS[KB_ROWS.length - 1]
+                ? `<button type="button" class="vp-key vp-key-back" data-k="⌫">⌫</button>`
+                : ""
+            }</div>`,
+        ).join("")}</div>
       </div>`;
 
     const $ = (sel) => this.root.querySelector(sel);
@@ -253,9 +278,12 @@ export class VanityPlateGame {
       e.preventDefault();
       const w = inp.value.trim().toLowerCase();
       if (!isLegal(w, h.plate, (x) => this.isWord(x))) {
-        lenEl.innerHTML = this.isWord(w)
-          ? `<span class="over">${h.plate} must appear in order</span>`
-          : `<span class="over">“${w.toUpperCase()}” isn't in the word list</span>`;
+        lenEl.innerHTML =
+          w.length < 4
+            ? `<span class="over">Words must be at least 4 letters</span>`
+            : this.isWord(w)
+              ? `<span class="over">${h.plate} must appear in order</span>`
+              : `<span class="over">“${w.toUpperCase()}” isn't in the word list</span>`;
         return;
       }
       if (parked && w.length >= parked.len) {
@@ -300,6 +328,28 @@ export class VanityPlateGame {
       if (this.holeIdx < this.holes.length) this.renderHole();
       else this.finish();
     });
+
+    // On-screen keyboard: only on touch, where we also suppress the OS keyboard.
+    // Keys drive the same input + input event, so every existing check (plate
+    // lighting, length meter, legality) works unchanged. Park it stays the enter.
+    const kb = $("#vp-kb");
+    if (isTouchDevice()) {
+      this.root.classList.add("vp-has-kb");
+      kb.setAttribute("aria-hidden", "false");
+      inp.setAttribute("inputmode", "none"); // stop the OS keyboard from opening
+      const emit = () => inp.dispatchEvent(new Event("input", { bubbles: true }));
+      // preventDefault on press keeps focus/caret on the input (no blur flicker).
+      kb.addEventListener("mousedown", (e) => e.preventDefault());
+      kb.addEventListener("click", (e) => {
+        const key = e.target.closest(".vp-key");
+        if (!key) return;
+        const k = key.dataset.k;
+        if (k === "⌫") inp.value = inp.value.slice(0, -1);
+        else inp.value += k.toLowerCase();
+        emit();
+        inp.focus();
+      });
+    }
 
     this.root.querySelector(".vp-back").addEventListener("click", () => this.showGarage());
     inp.focus();

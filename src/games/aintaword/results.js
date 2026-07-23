@@ -1,18 +1,17 @@
-// Per-day, per-difficulty result storage.
+// Per-day, per-difficulty result storage for Ain't a Word.
 //
-// Each difficulty is a once-a-day run: playing it records the result, and
-// re-selecting it shows that result rather than starting over. Everything is
-// keyed to a single day and self-prunes — if the stored date isn't today, the
-// whole blob is treated as empty, so localStorage never accumulates history.
+// Thin adapter over core/history.js, which now persists EVERY day's results (not
+// just today) in one uniform store — see that file for the schema and the reason
+// it is shared. Archive replays of past days are recorded under their own date,
+// so completing an old board earns a completion dot and can never overwrite
+// today's result. All-time best (below) stays a separate, game-owned key.
 
 import { todayKey } from "../../core/daily.js";
+import { dayResults, getResult as histGet, putResult, playedDates as histDates } from "../../core/history.js";
 
-const KEY = "aintaword2:aintaword:daily";
+const GAME = "aintaword";
 const BEST_KEY = "aintaword2:aintaword:best";
 
-// Re-exported so existing callers (game.js, index.js, scripts/e2e.mjs) keep
-// importing it from here; the definition now lives in core/daily.js so both
-// games share one notion of when the day rolls over.
 export { todayKey };
 
 /** Deterministic seed for a given day + difficulty — identical for all players. */
@@ -20,37 +19,14 @@ export function dailySeedFor(difficulty, day = todayKey()) {
   return `aintaword:${day}:${difficulty}`;
 }
 
-function readToday() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    // Stale day → treat as no results, and let the next write overwrite it.
-    if (!data || data.date !== todayKey()) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
-// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
-// unplayed and never writes, so replaying an old run can't overwrite today's
-// result or pollute the all-time best. Persisting past days is the later
-// "completion history" step; until then archive plays are just-for-fun.
-function isToday(day) {
-  return day === todayKey();
-}
-
-/** All of today's results, keyed by difficulty id. */
+/** All of a day's results, keyed by difficulty id. Defaults to today. */
 export function todaysResults(day = todayKey()) {
-  if (!isToday(day)) return {};
-  return readToday()?.results || {};
+  return dayResults(GAME, day);
 }
 
 /** @returns {{score:number, history:Array, playedAt:string}|null} */
 export function getResult(difficulty, day = todayKey()) {
-  return todaysResults(day)[difficulty] || null;
+  return histGet(GAME, difficulty, day);
 }
 
 export function hasPlayed(difficulty, day = todayKey()) {
@@ -58,23 +34,25 @@ export function hasPlayed(difficulty, day = todayKey()) {
 }
 
 export function saveResult(difficulty, { score, history }, day = todayKey()) {
-  if (!isToday(day)) return; // ephemeral archive replay — don't persist
-  try {
-    const data = readToday() || { date: todayKey(), results: {} };
-    data.date = todayKey();
-    data.results[difficulty] = {
+  putResult(
+    GAME,
+    difficulty,
+    {
       score,
       // Only what the review list and share text need.
       history: history.map((r) => ({ real: r.real, fake: r.fake, correct: r.correct })),
       playedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(KEY, JSON.stringify(data));
-  } catch {
-    /* private mode / quota — the run just won't persist */
-  }
+    },
+    day,
+  );
 }
 
-// --- all-time best, per difficulty ---------------------------------------
+/** Every date this game has been completed on — for the archive's played marks. */
+export function playedDates() {
+  return histDates(GAME);
+}
+
+// --- all-time best, per difficulty (separate from per-day history) -----------
 
 export function bestScore(difficulty) {
   try {
@@ -85,8 +63,7 @@ export function bestScore(difficulty) {
 }
 
 /** Records a new best if it beats the old one. @returns {boolean} was it a record */
-export function recordBest(difficulty, score, day = todayKey()) {
-  if (!isToday(day)) return false; // archive replays don't set all-time records
+export function recordBest(difficulty, score) {
   const prev = bestScore(difficulty);
   if (score <= prev) return false;
   try {

@@ -47,7 +47,9 @@ const readWords = (f) =>
 /**
  * Build the pools once: the full ENABLE validity set (the same list the client
  * validates against) and the familiar par pool — SCOWL tiers 10+20 intersected
- * with ENABLE, length ≥ 3, each word's tier remembered, no stopword stripping.
+ * with ENABLE, length ≥ 4, each word's tier remembered, no stopword stripping.
+ * The ≥ 4 floor mirrors the engine's isLegal: 3-letter words are suppressed, so
+ * they must not count toward par or birdie here either.
  */
 export function loadPools() {
   const enable = new Set(
@@ -60,13 +62,13 @@ export function loadPools() {
   const famTier = new Map();
   for (const v of ["english", "american"])
     for (const w of readWords(`${v}-words.10`))
-      if (w.length >= 3 && enable.has(w)) famTier.set(w, 10);
+      if (w.length >= 4 && enable.has(w)) famTier.set(w, 10);
   for (const v of ["english", "american"])
     for (const w of readWords(`${v}-words.20`))
-      if (w.length >= 3 && enable.has(w) && !famTier.has(w)) famTier.set(w, 20);
+      if (w.length >= 4 && enable.has(w) && !famTier.has(w)) famTier.set(w, 20);
 
   const familiar = [...famTier.keys()];
-  const enableArr = [...enable].filter((w) => w.length >= 3);
+  const enableArr = [...enable].filter((w) => w.length >= 4);
   return { enable, enableArr, famTier, familiar };
 }
 
@@ -79,7 +81,7 @@ export function analyze(plate, familiar, famTier) {
   const parWords = [];
   const lens = [];
   for (const w of familiar) {
-    if (w.length >= 3 && satisfies(w, plate)) {
+    if (w.length >= 4 && satisfies(w, plate)) {
       count++;
       lens.push(w.length);
       if (w.length < min) {

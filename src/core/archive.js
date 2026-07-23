@@ -51,16 +51,19 @@ export function formatDay(key) {
 /**
  * Open the archive calendar.
  *
- * @param {object}  opts
- * @param {string}  opts.start    earliest selectable day key (inclusive)
- * @param {string} [opts.today]   the day treated as "today" (defaults to now)
- * @param {string} [opts.current] the day currently being viewed, highlighted
+ * @param {object}   opts
+ * @param {string}   opts.start    earliest selectable day key (inclusive)
+ * @param {string}  [opts.today]   the day treated as "today" (defaults to now)
+ * @param {string}  [opts.current] the day currently being viewed, highlighted
+ * @param {string[]}[opts.played]  dates (YYYY-MM-DD) the player has completed,
+ *          marked with a dot so past play is visible at a glance.
  * @returns {Promise<string|null>} the chosen day key, or null if dismissed.
  *          Choosing today's cell resolves with today's key — the caller decides
  *          that means "leave archive mode".
  */
-export function openArchive({ start, today = todayKey(), current = today } = {}) {
+export function openArchive({ start, today = todayKey(), current = today, played = [] } = {}) {
   return new Promise((resolve) => {
+    const playedSet = new Set(played);
     // Clamp the initial view month to the selectable range.
     const startD = dateOf(start);
     const todayD = dateOf(today);
@@ -128,6 +131,7 @@ export function openArchive({ start, today = todayKey(), current = today } = {})
           outOfRange ? "is-disabled" : "is-day",
           isToday ? "is-today" : "",
           isCurrent ? "is-current" : "",
+          playedSet.has(key) ? "is-played" : "",
         ].join(" ").trim();
         cells.push(
           outOfRange

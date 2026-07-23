@@ -1,12 +1,18 @@
 // Per-day, per-difficulty result storage for Numburst.
 //
-// Mirrors games/colorpath/results.js. The difference is which way "better"
-// runs: Numburst is a high score, so more points wins and ties break on the
-// bombs you had left over.
+// Thin adapter over core/history.js, which now persists EVERY day's results (not
+// just today) in one uniform store — see that file for the schema and the reason
+// it is shared. Archive replays of past days are recorded under their own date,
+// so completing an old board earns a completion dot and can never overwrite
+// today's result. All-time best (below) stays a separate, game-owned key.
+//
+// Numburst is a high score, so more points wins and ties break on the bombs you
+// had left over.
 
 import { todayKey } from "../../core/daily.js";
+import { dayResults, getResult as histGet, putResult, playedDates as histDates } from "../../core/history.js";
 
-const KEY = "aintaword2:numburst:daily";
+const GAME = "numburst";
 const BEST_KEY = "aintaword2:numburst:best";
 
 export { todayKey };
@@ -16,48 +22,26 @@ export function dailySeedFor(difficulty, day = todayKey()) {
   return `numburst:${day}:${difficulty}`;
 }
 
-function readToday() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data || data.date !== todayKey()) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
-// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
-// unplayed and never writes, so replaying an old board can't overwrite today's
-// result or pollute the all-time best. Persisting past days is the later
-// "completion history" step; until then archive plays are just-for-fun.
-function isToday(day) {
-  return day === todayKey();
-}
-
+/** All of a day's results, keyed by difficulty id. Defaults to today. */
 export function todaysResults(day = todayKey()) {
-  if (!isToday(day)) return {};
-  return readToday()?.results || {};
+  return dayResults(GAME, day);
 }
 
 /** @returns {{score:number, unused:number, playedAt:string}|null} */
 export function getResult(difficulty, day = todayKey()) {
-  return todaysResults(day)[difficulty] || null;
+  return histGet(GAME, difficulty, day);
 }
 
 export function saveResult(difficulty, { score, unused }, day = todayKey()) {
-  if (!isToday(day)) return; // ephemeral archive replay — don't persist
-  try {
-    const data = readToday() || { date: todayKey(), results: {} };
-    data.date = todayKey();
-    data.results[difficulty] = { score, unused, playedAt: new Date().toISOString() };
-    localStorage.setItem(KEY, JSON.stringify(data));
-  } catch {
-    /* private mode / quota — the run just won't persist */
-  }
+  putResult(GAME, difficulty, { score, unused, playedAt: new Date().toISOString() }, day);
 }
+
+/** Every date this game has been completed on — for the archive's played marks. */
+export function playedDates() {
+  return histDates(GAME);
+}
+
+// --- all-time best, per difficulty (separate from per-day history) -----------
 
 export function bestResult(difficulty) {
   try {
@@ -71,8 +55,7 @@ export function bestResult(difficulty) {
 }
 
 /** @returns {boolean} was it a record */
-export function recordBest(difficulty, { score, unused }, day = todayKey()) {
-  if (!isToday(day)) return false; // archive replays don't set all-time records
+export function recordBest(difficulty, { score, unused }) {
   const prev = bestResult(difficulty);
   const better =
     !prev || score > prev.score || (score === prev.score && unused > prev.unused);

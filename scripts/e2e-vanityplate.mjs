@@ -34,9 +34,9 @@ const { VanityPlateGame } = await import("../src/games/vanityplate/game.js");
 const { satisfies } = await import("../src/games/vanityplate/engine.js");
 const { DIFFICULTY_ORDER } = await import("../src/games/vanityplate/difficulty.js");
 const { PLATE: DEMO_PLATE, FRAMES: DEMO_FRAMES } = await import("../src/games/vanityplate/tutorial.js");
-const { getResult, saveResult, todayKey } = await import("../src/games/vanityplate/results.js");
+const { getResult, saveResult, playedDates, todayKey } = await import("../src/games/vanityplate/results.js");
 
-// The store persists only "today"; a past date is an ephemeral archive replay.
+// The store now persists EVERY day under its own date, not just today.
 const TODAY = todayKey();
 
 // A real dictionary stand-in: the same ENABLE list the app validates against.
@@ -169,16 +169,31 @@ const parkedLen = () =>
   }
 }
 
-// ── archive replays (any non-today day) must not persist or clobber today ─────
+// ── per-date history: every completed day persists under its own date, and the
+//    archive can list which days were played. A past day never clobbers today. ─
 {
   localStorage.clear();
   const PAST = "2026-01-05";
   saveResult("easy", { strokes: 30, par: 36, birdies: 1 }, PAST);
-  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
-  ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+  ok(getResult("easy", PAST)?.strokes === 30, "a past-day result is stored under its date");
+  ok(getResult("easy", TODAY) === null, "a past-day result doesn't leak into today");
   saveResult("easy", { strokes: 34, par: 36, birdies: 0 }, TODAY);
-  ok(getResult("easy", TODAY)?.strokes === 34, "today's result still persists");
-  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+  ok(getResult("easy", TODAY)?.strokes === 34, "today's result persists independently");
+  ok(getResult("easy", PAST)?.strokes === 30, "the past day is untouched by today's save");
+  const days = playedDates();
+  ok(days.includes(PAST) && days.includes(TODAY), "playedDates lists both completed days");
+  localStorage.clear();
+}
+
+// ── the old single-day blob shape migrates into the per-date store on read ────
+{
+  localStorage.clear();
+  localStorage.setItem(
+    "aintaword2:vanityplate:daily",
+    JSON.stringify({ date: "2026-02-02", results: { easy: { strokes: 32, par: 36, birdies: 2 } } }),
+  );
+  ok(getResult("easy", "2026-02-02")?.strokes === 32, "legacy result readable at its date");
+  ok(playedDates().includes("2026-02-02"), "legacy day appears in playedDates");
   localStorage.clear();
 }
 

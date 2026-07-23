@@ -30,9 +30,9 @@ const { StoreyGame } = await import("../src/games/storey/game.js");
 const { pillarsOf, scoreTower } = await import("../src/games/storey/engine.js");
 const { DIFFICULTY_ORDER, DIFFICULTIES } = await import("../src/games/storey/difficulty.js");
 const { DEMO_FLOORS, GRAVITY: DEMO_GRAVITY } = await import("../src/games/storey/tutorial.js");
-const { getResult, saveResult, todayKey } = await import("../src/games/storey/results.js");
+const { getResult, saveResult, playedDates, todayKey } = await import("../src/games/storey/results.js");
 
-// The store persists only "today"; any other day is an ephemeral archive replay.
+// The store now persists EVERY day, under its own date — archive replays included.
 const TODAY = todayKey();
 
 const enable = new Set(
@@ -170,16 +170,31 @@ for (const id of DIFFICULTY_ORDER) {
   game.destroy();
 }
 
-// ── archive replays are ephemeral (never persist, never clobber today) ───────
+// ── every day persists under its own date (archive replays included) ─────────
 {
   localStorage.clear();
   const PAST = "2026-01-05";
   saveResult("easy", { score: 10, par: 20, stories: 3 }, PAST);
-  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
+  ok(getResult("easy", PAST)?.score === 10, "a past-day result is stored under its date");
   ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
   saveResult("easy", { score: 12, par: 20, stories: 3 }, TODAY);
-  ok(getResult("easy", TODAY)?.score === 12, "today's result still persists");
-  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+  ok(getResult("easy", TODAY)?.score === 12, "today's result persists independently");
+  ok(getResult("easy", PAST)?.score === 10, "the past day's result is untouched by today's");
+  const played = new Set(playedDates());
+  ok(played.has(PAST) && played.has(TODAY), "playedDates lists every completed date");
+  localStorage.clear();
+}
+
+// ── legacy single-day blob migrates into per-date history in place ───────────
+{
+  localStorage.clear();
+  const LEGACY = "2025-12-01";
+  localStorage.setItem(
+    "aintaword2:storey:daily",
+    JSON.stringify({ date: LEGACY, results: { easy: { score: 7, par: 15, stories: 2, playedAt: "x" } } }),
+  );
+  ok(getResult("easy", LEGACY)?.score === 7, "old {date,results} blob is read under its date");
+  ok(new Set(playedDates()).has(LEGACY), "migrated day shows up in playedDates");
   localStorage.clear();
 }
 

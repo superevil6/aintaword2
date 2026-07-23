@@ -18,6 +18,7 @@ import { ROUND_COMPLETE } from "./core/lifecycle.js";
 import { isSupporter, onChange, installDevBackdoor } from "./core/entitlements.js";
 import { openArchive, formatDay } from "./core/archive.js";
 import { todayKey } from "./core/daily.js";
+import { playedDates } from "./core/history.js";
 import "./games/aintaword/index.js";  // side effect: registers the game
 import "./games/colorpath/index.js"; // side effect: registers the game
 import "./games/wordiamond/index.js"; // side effect: registers the game
@@ -165,6 +166,9 @@ archiveBtn.addEventListener("click", async () => {
     start: ARCHIVE_START,
     today: todayKey(),
     current: normalizeDay(routedDay()) || todayKey(),
+    // Uniform history store is keyed by the same id the router uses, so the
+    // shell can mark completed days without any per-game hook.
+    played: playedDates(gameId),
   });
   if (picked == null) return; // dismissed
   goTo(gameId, { day: normalizeDay(picked) });

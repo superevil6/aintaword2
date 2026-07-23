@@ -37,11 +37,12 @@ for (const k of [
 // Import AFTER globals exist (game.js touches window at import time via bind only,
 // but be safe).
 const { AintAWordGame } = await import("../src/games/aintaword/game.js");
-const { getResult, saveResult, todayKey } = await import("../src/games/aintaword/results.js");
+const { getResult, saveResult, playedDates, todayKey } = await import("../src/games/aintaword/results.js");
 const { wordsForTiers } = await import("../src/data/commonWords.js");
 const { DIFFICULTIES, DIFFICULTY_ORDER } = await import("../src/games/aintaword/difficulty.js");
 
-// Only "today" is persisted; a fixed past date is an ephemeral archive replay.
+// Every day is persisted now; a fixed past date is an archive replay recorded
+// under its own date (see the per-date history section below).
 const TODAY = todayKey();
 const COMMON_WORDS = wordsForTiers();
 
@@ -421,18 +422,34 @@ ok(!/Copied!/.test(shareBtn.textContent), "does not falsely claim it copied");
 g2.destroy();
 shareHost.remove();
 
-// --- archive replays are ephemeral ----------------------------------------
+// --- per-date history persists --------------------------------------------
 
-console.log("\narchive replays (any non-today day) never persist or clobber today:");
+// Every completed day persists under its own date, and the archive can list
+// which days were played. A past-day replay never clobbers today.
+console.log("\nper-date history persists (a past day is stored under its date, not leaked into today):");
 {
   localStorage.clear();
   const PAST = "2026-01-05";
   saveResult("easy", { score: 10, history: [] }, PAST);
-  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
-  ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+  ok(getResult("easy", PAST)?.score === 10, "a past-day result is stored under its date");
+  ok(getResult("easy", TODAY) === null, "a past-day result doesn't leak into today");
   saveResult("easy", { score: 12, history: [] }, TODAY);
-  ok(getResult("easy", TODAY)?.score === 12, "today's result still persists");
-  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+  ok(getResult("easy", TODAY)?.score === 12, "today's result persists independently");
+  ok(getResult("easy", PAST)?.score === 10, "the past day is untouched by today's save");
+  const days = playedDates();
+  ok(days.includes(PAST) && days.includes(TODAY), "playedDates lists both completed days");
+}
+
+// The old single-day blob shape migrates into the per-date store on read.
+console.log("\nlegacy single-day blob migrates into the per-date store:");
+{
+  localStorage.clear();
+  localStorage.setItem(
+    "aintaword2:aintaword:daily",
+    JSON.stringify({ date: "2026-02-02", results: { easy: { score: 7, history: [] } } }),
+  );
+  ok(getResult("easy", "2026-02-02")?.score === 7, "legacy result readable at its date");
+  ok(playedDates().includes("2026-02-02"), "legacy day appears in playedDates");
 }
 
 console.log(`\n${fail === 0 ? "✅" : "❌"} ${pass} passed, ${fail} failed`);

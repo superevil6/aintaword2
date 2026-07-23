@@ -42,7 +42,7 @@ const { evaluate, tracePath, normalizeAngle, DEG, TAU } =
 const { NEUTRAL, MAX_LEVEL, LEVEL_NAMES } = await import("../src/games/photonfinish/levels.js");
 const { buildShareText } = await import("../src/games/photonfinish/share.js");
 const { setPuzzleData, availableDays } = await import("../src/games/photonfinish/board.js");
-const { getResult, saveResult, todayKey } = await import("../src/games/photonfinish/results.js");
+const { getResult, saveResult, playedDates, todayKey } = await import("../src/games/photonfinish/results.js");
 const { PUZZLES } = await import("../src/data/photonfinishPuzzles.js");
 setPuzzleData(PUZZLES); // mount() does this in the app; tests build the game directly
 const { DIFFICULTY_ORDER, DIFFICULTIES } = await import("../src/games/photonfinish/difficulty.js");
@@ -319,14 +319,14 @@ shareGame._render();
 ok(app.querySelector(".pf-share") === null, "a solved PRACTICE board does not — nobody else is on it");
 shareGame.destroy();
 
-// ── Archive replays are ephemeral ────────────────────────────────────────────
+// ── Per-date history persists ────────────────────────────────────────────────
 //
-// A past day is a supporter-perk replay: playable, but its result must never be
-// stored and must never clobber today's result or the all-time best. The store
-// enforces that; here we drive it directly and also confirm opts.day reaches the
-// board loader.
+// Every completed day is stored under its own date: an archive replay of a past
+// board earns a completion dot, and a past day can never clobber today's result
+// or leak into it. The store enforces that; here we drive it directly and also
+// confirm opts.day reaches the board loader.
 
-console.log("\narchive replay:");
+console.log("\nper-date history:");
 localStorage.clear();
 const TODAY = todayKey();
 const PAST = availableDays().find((d) => d < TODAY) || "2026-01-05";
@@ -337,11 +337,23 @@ ok(replay.puzzle.day === PAST, "the past day's own board is loaded, not today's"
 replay.destroy();
 
 saveResult("easy", { solved: true, moves: 5 }, PAST);
-ok(getResult("easy", PAST) === null, "a past-day result is not stored");
-ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
+ok(getResult("easy", PAST)?.moves === 5, "a past-day result is stored under its date");
+ok(getResult("easy", TODAY) === null, "a past-day result doesn't leak into today");
 saveResult("easy", { solved: true, moves: 7 }, TODAY);
-ok(getResult("easy", TODAY)?.moves === 7, "today's result still persists");
-ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+ok(getResult("easy", TODAY)?.moves === 7, "today's result persists independently");
+ok(getResult("easy", PAST)?.moves === 5, "the past day is untouched by today's save");
+const days = playedDates();
+ok(days.includes(PAST) && days.includes(TODAY), "playedDates lists both completed days");
+localStorage.clear();
+
+// The old single-day blob shape migrates into the per-date store on read.
+console.log("\nlegacy blob migrates:");
+localStorage.setItem(
+  "aintaword2:photonfinish:daily",
+  JSON.stringify({ date: "2026-02-02", results: { easy: { solved: true, moves: 4 } } }),
+);
+ok(getResult("easy", "2026-02-02")?.moves === 4, "legacy result readable at its date");
+ok(playedDates().includes("2026-02-02"), "legacy day appears in playedDates");
 localStorage.clear();
 
 console.log(`\n${fail === 0 ? "✅" : "❌"} ${pass} passed, ${fail} failed`);

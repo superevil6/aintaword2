@@ -29,10 +29,11 @@ for (const k of [
 const { ColorPathGame } = await import("../src/games/colorpath/game.js");
 const { COLOR_NAMES, PRIMARIES, colorHex, paletteId } =
   await import("../src/games/colorpath/colors.js");
-const { getResult, saveResult, recordBest, todayKey } =
+const { getResult, saveResult, recordBest, playedDates, todayKey } =
   await import("../src/games/colorpath/results.js");
 
-// The store persists only "today"; a past date is an ephemeral archive replay.
+// The store now persists every day under its own date; a past date is an archive
+// replay recorded independently of today.
 const TODAY = todayKey();
 
 const ALL_COLORS = COLOR_NAMES.map((_, i) => i);
@@ -174,20 +175,34 @@ ok(app.querySelector(".cp-toggle-box").checked,
 ok(pipsMatchFill(returning).length === 0, "and its pips agree with its fills");
 returning.destroy();
 
-console.log("\narchive replays are ephemeral:");
+console.log("\nper-date history persists:");
 {
   localStorage.clear();
   const PAST = "2026-01-05";
-  // A past-day play must never persist or leak into today's stored result.
+  // A past-day play is stored under its own date, and never leaks into today.
   saveResult("easy", { moves: 7, timeMs: 5000 }, PAST);
-  ok(getResult("easy", PAST) === null, "a past-day result is not stored");
-  ok(getResult("easy", TODAY) === null, "playing a past day doesn't leak into today");
-  ok(recordBest("easy", { moves: 1, timeMs: 100 }, PAST) === false,
-    "a past-day play never sets an all-time best");
-  // Today still persists normally.
+  ok(getResult("easy", PAST)?.moves === 7, "a past-day result is stored under its date");
+  ok(getResult("easy", TODAY) === null, "a past-day result doesn't leak into today");
+  ok(recordBest("easy", { moves: 1, timeMs: 100 }) === true,
+    "any completion can set an all-time best");
+  // Today persists independently, and the past day is untouched.
   saveResult("easy", { moves: 9, timeMs: 6000 }, TODAY);
-  ok(getResult("easy", TODAY)?.moves === 9, "today's result still persists");
-  ok(getResult("easy", PAST) === null, "today's result doesn't appear under a past day");
+  ok(getResult("easy", TODAY)?.moves === 9, "today's result persists independently");
+  ok(getResult("easy", PAST)?.moves === 7, "the past day is untouched by today's save");
+  const days = playedDates();
+  ok(days.includes(PAST) && days.includes(TODAY), "playedDates lists both completed days");
+  localStorage.clear();
+}
+
+console.log("\nlegacy blob migrates:");
+{
+  localStorage.clear();
+  localStorage.setItem(
+    "aintaword2:colorpath:daily",
+    JSON.stringify({ date: "2026-02-02", results: { easy: { moves: 6, timeMs: 4000 } } }),
+  );
+  ok(getResult("easy", "2026-02-02")?.moves === 6, "legacy result readable at its date");
+  ok(playedDates().includes("2026-02-02"), "legacy day appears in playedDates");
   localStorage.clear();
 }
 

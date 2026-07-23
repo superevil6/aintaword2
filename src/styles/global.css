@@ -295,6 +295,28 @@ button.archive-cell.is-current {
   background: var(--accent);
   color: #fff;
 }
+
+/* A completed day carries a small dot under the number. Cells are grid-centered,
+   so the dot is positioned absolutely to sit just below without shifting it. */
+.archive-cell.is-played {
+  position: relative;
+}
+.archive-cell.is-played::after {
+  content: "";
+  position: absolute;
+  bottom: 0.28rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--good);
+}
+/* On the selected day the fill is the accent, so switch the dot to white for
+   contrast. */
+button.archive-cell.is-current.is-played::after {
+  background: #fff;
+}
 .archive-cell:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

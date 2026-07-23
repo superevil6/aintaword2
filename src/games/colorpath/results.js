@@ -1,17 +1,17 @@
 // Per-day, per-difficulty result storage for Color Path.
 //
-// Each difficulty is a once-a-day board: solving it records the result, and
-// re-selecting that tier shows the result rather than regenerating the same
-// puzzle. Everything is keyed to a single day and self-prunes — if the stored
-// date isn't today, the whole blob is treated as empty, so localStorage never
-// accumulates history.
+// Thin adapter over core/history.js, which now persists EVERY day's results (not
+// just today) in one uniform store — see that file for the schema and the reason
+// it is shared. Archive replays of past days are recorded under their own date,
+// so completing an old board earns a completion dot and can never overwrite
+// today's result. All-time best (below) stays a separate, game-owned key.
 //
-// Mirrors games/aintaword/results.js. The difference is what "better" means:
-// Color Path is a golf score, so fewer moves wins and ties break on time.
+// Color Path is a golf score, so "better" means fewer moves, ties breaking on time.
 
 import { todayKey } from "../../core/daily.js";
+import { dayResults, getResult as histGet, putResult, playedDates as histDates } from "../../core/history.js";
 
-const KEY = "aintaword2:colorpath:daily";
+const GAME = "colorpath";
 const BEST_KEY = "aintaword2:colorpath:best";
 
 export { todayKey };
@@ -21,37 +21,14 @@ export function dailySeedFor(difficulty, day = todayKey()) {
   return `colorpath:${day}:${difficulty}`;
 }
 
-function readToday() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    // Stale day → treat as no results, and let the next write overwrite it.
-    if (!data || data.date !== todayKey()) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-// Every reader/writer takes an optional `day`. Only today's puzzle is persisted;
-// an archive replay (a past day, a supporter perk) is EPHEMERAL — it reads as
-// unplayed and never writes, so replaying an old board can't overwrite today's
-// result or pollute the all-time best. Persisting past days is the later
-// "completion history" step; until then archive plays are just-for-fun.
-function isToday(day) {
-  return day === todayKey();
-}
-
-/** All of today's results, keyed by difficulty id. */
+/** All of a day's results, keyed by difficulty id. Defaults to today. */
 export function todaysResults(day = todayKey()) {
-  if (!isToday(day)) return {};
-  return readToday()?.results || {};
+  return dayResults(GAME, day);
 }
 
 /** @returns {{moves:number, timeMs:number, playedAt:string}|null} */
 export function getResult(difficulty, day = todayKey()) {
-  return todaysResults(day)[difficulty] || null;
+  return histGet(GAME, difficulty, day);
 }
 
 export function hasPlayed(difficulty, day = todayKey()) {
@@ -59,22 +36,15 @@ export function hasPlayed(difficulty, day = todayKey()) {
 }
 
 export function saveResult(difficulty, { moves, timeMs }, day = todayKey()) {
-  if (!isToday(day)) return; // ephemeral archive replay — don't persist
-  try {
-    const data = readToday() || { date: todayKey(), results: {} };
-    data.date = todayKey();
-    data.results[difficulty] = {
-      moves,
-      timeMs,
-      playedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(KEY, JSON.stringify(data));
-  } catch {
-    /* private mode / quota — the run just won't persist */
-  }
+  putResult(GAME, difficulty, { moves, timeMs, playedAt: new Date().toISOString() }, day);
 }
 
-// --- all-time best, per difficulty ---------------------------------------
+/** Every date this game has been completed on — for the archive's played marks. */
+export function playedDates() {
+  return histDates(GAME);
+}
+
+// --- all-time best, per difficulty (separate from per-day history) -----------
 
 /** @returns {{moves:number, timeMs:number}|null} */
 export function bestResult(difficulty) {
@@ -90,12 +60,12 @@ export function bestResult(difficulty) {
 
 /**
  * Records a new best if it beats the old one. Fewer moves wins; an equal move
- * count still counts as a record if it was solved faster.
+ * count still counts as a record if it was solved faster. Any completion can set
+ * a record — an archive replay of an old board counts just like today's.
  *
  * @returns {boolean} was it a record
  */
-export function recordBest(difficulty, { moves, timeMs }, day = todayKey()) {
-  if (!isToday(day)) return false; // archive replays don't set all-time records
+export function recordBest(difficulty, { moves, timeMs }) {
   const prev = bestResult(difficulty);
   const better =
     !prev || moves < prev.moves || (moves === prev.moves && timeMs < prev.timeMs);

@@ -6,7 +6,7 @@
 // the round is what gives the day its length and lets a bad hole be recovered.
 //
 // The one real axis is the PAR BAND: the length of the shortest everyday word.
-// Easy plates hide a short common word (par 3–4); Hard plates force a longer
+// Easy plates hide a short common word (par 4); Hard plates force a longer
 // tight word (par 5–6), where the gap between the word you first think of and
 // the shortest one is widest. `minWords` rejects sparse plates so there is
 // always more than one way in — see the fairness note in
@@ -23,7 +23,7 @@ export const DIFFICULTIES = {
     label: "Easy",
     course: "Sunday Drive",
     blurb: "Short plates hiding an everyday word",
-    parBand: [3, 4],
+    parBand: [4, 4],
     minWords: 40,
   },
   medium: {
