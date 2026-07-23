@@ -78,6 +78,57 @@ export function putResult(gameId, difficulty, result, day = todayKey()) {
   const dayMap = data.days[day] || (data.days[day] = {});
   dayMap[difficulty] = result;
   write(gameId, data);
+  notifyChange();
+}
+
+// ── Change signal + merge (for cross-device sync) ────────────────────────────
+
+const CHANGE_EVENT = "wg:history-change";
+
+/** Fired after a LOCAL play is recorded, so sync can push. NOT fired by
+ *  mergeDay(), so pulling from the server can't loop back into another push. */
+function notifyChange() {
+  try {
+    window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
+  } catch {
+    /* no window (tests) */
+  }
+}
+
+/** Subscribe to local history writes. Returns an unsubscribe function. */
+export function onHistoryChange(cb) {
+  const handler = () => cb();
+  window.addEventListener(CHANGE_EVENT, handler);
+  return () => window.removeEventListener(CHANGE_EVENT, handler);
+}
+
+function playedMs(r) {
+  return Date.parse(r?.playedAt || "") || 0;
+}
+
+/**
+ * Merge a day's results from another device into local history. Per difficulty,
+ * the entry with the later `playedAt` wins (last-write-wins); entries the local
+ * copy lacks are added. Writes silently — no change event — so an inbound sync
+ * never triggers an outbound one.
+ */
+export function mergeDay(gameId, date, incomingMap) {
+  if (!incomingMap || typeof incomingMap !== "object") return;
+  const data = read(gameId);
+  const existing = data.days[date] || {};
+  let changed = false;
+  for (const [difficulty, incoming] of Object.entries(incomingMap)) {
+    if (!incoming || typeof incoming !== "object") continue;
+    const cur = existing[difficulty];
+    if (!cur || playedMs(incoming) > playedMs(cur)) {
+      existing[difficulty] = incoming;
+      changed = true;
+    }
+  }
+  if (changed) {
+    data.days[date] = existing;
+    write(gameId, data);
+  }
 }
 
 /**

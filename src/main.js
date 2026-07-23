@@ -22,6 +22,7 @@ import { openSupporter } from "./supporterModal.js";
 import { openArchive, formatDay } from "./core/archive.js";
 import { todayKey } from "./core/daily.js";
 import { playedDates } from "./core/history.js";
+import { startSync, stopSync } from "./core/sync.js";
 import "./games/aintaword/index.js";  // side effect: registers the game
 import "./games/colorpath/index.js"; // side effect: registers the game
 import "./games/wordiamond/index.js"; // side effect: registers the game
@@ -96,8 +97,13 @@ onChange(() => {
   initTheme();
   // Supporter themes may have just unlocked (or locked) — re-render the swatches.
   themeControl.refresh();
+  // Cross-device history sync follows supporter status. startSync() is a no-op
+  // without a stored license key, so unlocking with a key kicks the first pull.
+  if (isSupporter()) startSync();
+  else stopSync();
 });
 syncSupporter();
+if (isSupporter()) startSync();
 
 let cleanup = null;
 
