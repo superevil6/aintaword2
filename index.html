@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f1220" />
 
+    <!-- Apply the saved theme before first paint so there's no flash of the
+         default palette. Gating is re-checked in JS (core/theme.js initTheme);
+         this only sets the attribute the CSS keys off. -->
+    <script>
+      try {
+        var t = localStorage.getItem("aintaword2:theme");
+        if (t && t !== "default") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
+
     <!-- Root share: someone sharing the site itself, not one game. This blurb is
          the SITE_SHARE entry in src/shareManifest.js, repeated here as literal
          text because a crawler reads this file without running any JS. Per-game

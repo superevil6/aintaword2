@@ -14,6 +14,58 @@
   --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* ── Supporter themes ──────────────────────────────────────────────────────
+   A theme is just an override of the shell palette above, applied via a
+   data-theme attribute on :root (see core/theme.js). --good/--bad stay fixed
+   across every theme so "correct / wrong" never changes meaning; only the
+   background and accent shift. The default palette is the bare :root. */
+:root[data-theme="ember"] {
+  --bg: #17100e;
+  --bg-2: #241612;
+  --fg: #fdeee7;
+  --fg-dim: #cba99b;
+  --accent: #ff7a4d;
+}
+:root[data-theme="forest"] {
+  --bg: #0b1512;
+  --bg-2: #12211b;
+  --fg: #e9fff5;
+  --fg-dim: #9dc6b5;
+  --accent: #34c98d;
+}
+:root[data-theme="slate"] {
+  --bg: #101319;
+  --bg-2: #1a2029;
+  --fg: #eef2f8;
+  --fg-dim: #9aa7b9;
+  --accent: #8aa0b8;
+}
+:root[data-theme="ocean"] {
+  --bg: #08131c;
+  --bg-2: #0e2130;
+  --fg: #e8f7ff;
+  --fg-dim: #93b6cc;
+  --accent: #22c1dc;
+}
+:root[data-theme="candy"] {
+  --bg: #1a0f16;
+  --bg-2: #2a1622;
+  --fg: #ffeef6;
+  --fg-dim: #d9a9c2;
+  --accent: #ff5fa2;
+}
+/* High-contrast: pure black + white, kept FREE (accessibility shouldn't be
+   paywalled). Only the SHARED palette maxes out here — a true high-contrast pass
+   would also strengthen the ~67 hardcoded faint hairlines, and the light "High
+   Contrast White" variant needs a full cross-game light-theme audit. */
+:root[data-theme="contrast"] {
+  --bg: #000000;
+  --bg-2: #101012;
+  --fg: #ffffff;
+  --fg-dim: #d5d9e3;
+  --accent: #8b7bff;
+}
+
 * {
   box-sizing: border-box;
 }

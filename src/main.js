@@ -16,6 +16,7 @@ import { mountHub } from "./hub.js";
 import { getGame, relatedGames } from "./core/registry.js";
 import { ROUND_COMPLETE } from "./core/lifecycle.js";
 import { isSupporter, onChange, installDevBackdoor } from "./core/entitlements.js";
+import { initTheme } from "./core/theme.js";
 import { openArchive, formatDay } from "./core/archive.js";
 import { todayKey } from "./core/daily.js";
 import { playedDates } from "./core/history.js";
@@ -66,11 +67,16 @@ bar.querySelector(".app-brand-name").textContent = SITE_NAME;
 // In dev the backdoor exposes ?supporter=1 and wg.setSupporter() for testing.
 if (import.meta.env.DEV) installDevBackdoor();
 
-// Re-evaluate the supporter badge and the archive button whenever entitlements
-// change, so the perk lights up (or goes dark) live.
+// Re-assert the theme now that entitlements are known (the inline head script
+// applied it flash-free but couldn't check the supporter gate).
+initTheme();
+
+// Re-evaluate the supporter badge, archive button, and theme whenever
+// entitlements change, so the perks light up (or go dark) live.
 onChange(() => {
   supporterEl.hidden = !isSupporter();
   syncArchiveButton();
+  initTheme();
 });
 supporterEl.hidden = !isSupporter();
 

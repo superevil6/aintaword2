@@ -10,6 +10,7 @@ import { hubArt } from "./hubArt.js";
 import { livePlayedDates } from "./core/history.js";
 import { computeStreak } from "./core/streak.js";
 import { todayKey } from "./core/daily.js";
+import { THEMES, applyTheme, isUnlocked, getThemeId } from "./core/theme.js";
 
 // Display sections, in order. A game lands in the FIRST section whose `match`
 // returns true, so the catch-all stays last. Grouping keeps the hub scannable
@@ -69,11 +70,18 @@ export function mountHub(container) {
              heading names the task rather than repeating the brand. -->
         <h1 class="hub-title">Choose a game</h1>
         <p class="hub-subtitle">${progressText(doneCount, games.length)}</p>
+        ${themePickerHtml()}
       </header>
       ${groupGames(games).map((s) => sectionHtml(s, done, streaks)).join("")}
     `;
 
     hub.addEventListener("click", (e) => {
+      // Theme swatches live in the same subtree; handle them before card picks.
+      const swatch = e.target.closest("[data-theme-id]");
+      if (swatch) {
+        selectTheme(hub, swatch.dataset.themeId);
+        return;
+      }
       const btn = e.target.closest("[data-id]");
       if (!btn) return;
       const game = games.find((g) => g.id === btn.dataset.id);
@@ -104,6 +112,50 @@ function currentStreak(game, today) {
   } catch {
     return 0;
   }
+}
+
+// ── Theme picker (a supporter perk) ─────────────────────────────────────────
+
+function themePickerHtml() {
+  const current = getThemeId();
+  return `
+    <div class="hub-themes" role="group" aria-label="Colour theme">
+      ${THEMES.map((t) => themeSwatch(t, current)).join("")}
+    </div>
+  `;
+}
+
+function themeSwatch(t, currentId) {
+  const unlocked = isUnlocked(t);
+  const selected = t.id === currentId;
+  const lock = unlocked ? "" : `<span class="hub-theme-lock" aria-hidden="true">🔒</span>`;
+  return `
+    <button
+      type="button"
+      class="hub-theme${selected ? " is-selected" : ""}${unlocked ? "" : " is-locked"}"
+      data-theme-id="${escapeAttr(t.id)}"
+      style="--swatch: ${escapeAttr(t.swatch)}"
+      aria-pressed="${selected}"
+      aria-label="${escapeHtml(t.name)} theme${unlocked ? "" : " (supporter)"}"
+      title="${escapeHtml(t.name)}${unlocked ? "" : " — supporter theme"}"
+    >${lock}</button>
+  `;
+}
+
+/**
+ * Apply an unlocked theme and reflect the choice in the picker. Locked swatches
+ * are inert — the lock icon signals they need a supporter entitlement; there is
+ * no purchase flow yet, so tonight they simply don't respond for free players.
+ */
+function selectTheme(hub, id) {
+  const theme = THEMES.find((t) => t.id === id);
+  if (!theme || !isUnlocked(theme)) return;
+  applyTheme(theme.id);
+  hub.querySelectorAll(".hub-theme").forEach((b) => {
+    const sel = b.dataset.themeId === theme.id;
+    b.classList.toggle("is-selected", sel);
+    b.setAttribute("aria-pressed", String(sel));
+  });
 }
 
 function progressText(doneCount, total) {
