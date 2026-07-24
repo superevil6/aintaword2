@@ -154,6 +154,7 @@ button {
 /* ── App banner (persistent; the way back to the game list) ─────────────── */
 
 .app-bar {
+  position: relative; /* positioning context for the mobile theme panel */
   width: 100%;
   max-width: 640px;
   flex-shrink: 0;
@@ -315,6 +316,39 @@ button {
   }
   .theme-options {
     transition: opacity 0.18s;
+  }
+}
+
+/* On a narrow screen the leftward reveal runs out of room and clips at the edge.
+   Drop the palette into a fixed-width panel BELOW the button instead, anchored
+   to its right edge, where the swatches have room to wrap onto more rows. The
+   reveal switches from horizontal (max-width) to vertical (max-height). */
+@media (max-width: 560px) {
+  /* Anchor the panel to the BAR, not the button: with the picker no longer the
+     positioning context, the panel centres on the bar (≈ the screen) instead of
+     hanging off the button's right edge and clipping. */
+  .theme-picker {
+    position: static;
+  }
+  .theme-options {
+    position: absolute;
+    left: 50%;
+    right: auto;
+    top: calc(100% + 0.4rem);
+    transform: translateX(-50%);
+    flex-wrap: wrap;
+    justify-content: center;
+    width: max-content;
+    max-width: min(92vw, 22rem);
+    max-height: 0;
+    padding: 0 0.6rem;
+    border-radius: 14px;
+    transition: max-height 0.24s ease, padding 0.2s ease, opacity 0.18s ease;
+  }
+  .theme-picker.is-open .theme-options {
+    max-width: min(92vw, 22rem);
+    max-height: 16rem;
+    padding: 0.55rem 0.6rem;
   }
 }
 

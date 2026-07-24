@@ -5,6 +5,7 @@
 
 import "./photonfinish.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { PhotonFinishGame } from "./game.js";
 import { setPuzzleData } from "./board.js";
 import { todaysResults } from "./results.js";
@@ -21,6 +22,7 @@ export default registerGame({
   accent: "#4ad9e4",
   tags: ["light", "spatial"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     // Loaded on demand so the ~0.5 MB of prebuilt daily boards stays out of the

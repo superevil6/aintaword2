@@ -10,6 +10,7 @@
 
 import "./storey.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { Dictionary } from "../../core/dictionary.js";
 import { StoreyGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
@@ -35,6 +36,7 @@ export default registerGame({
   accent: "#d0553f",
   tags: ["word"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     const day = opts.day ?? todayKey();

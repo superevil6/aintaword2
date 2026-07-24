@@ -5,6 +5,7 @@
 
 import "./aintaword.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { Dictionary } from "../../core/dictionary.js";
 import { AintAWordGame } from "./game.js";
 import { loadDailySet, pairsFor } from "./dailySet.js";
@@ -31,6 +32,7 @@ export default registerGame({
   accent: "#7c5cff",
   tags: ["word"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     // An archive replay (supporter perk) passes a past `day`; without one we

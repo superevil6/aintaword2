@@ -5,6 +5,7 @@
 
 import "./mirrorword.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { MirrorwordGame } from "./game.js";
 import { todaysResults } from "./results.js";
 
@@ -21,6 +22,7 @@ export default registerGame({
   accent: "#49c6e0",
   tags: ["word", "grid"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     // Loaded on demand so the word pool stays out of the initial bundle for

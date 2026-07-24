@@ -11,6 +11,7 @@
 
 import "./vanityplate.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { Dictionary } from "../../core/dictionary.js";
 import { VanityPlateGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
@@ -38,6 +39,7 @@ export default registerGame({
   accent: "#f4c430",
   tags: ["word"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     const day = opts.day ?? todayKey();

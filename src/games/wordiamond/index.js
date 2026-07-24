@@ -5,6 +5,7 @@
 
 import "./wordiamond.css";
 import { registerGame } from "../../core/registry.js";
+import { MODES } from "./shapes.js";
 import { WordiamondGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
 import { todaysResults } from "./results.js";
@@ -22,6 +23,7 @@ export default registerGame({
   accent: "#5b8ff5",
   tags: ["word", "grid"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: MODES.map((m) => m.id),
 
   async mount(container, opts = {}) {
     // Loaded on demand so the puzzle pools and the word lists — needed at

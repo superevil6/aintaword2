@@ -79,6 +79,18 @@ export const GAME_SHARE = {
       "Build a tower of words. Each floor is a word on two consonant pillars from your " +
       "daily tiles — wider pays more, but every storey up fights gravity. Reach par.",
   },
+  colordrop: {
+    title: "Colordrop",
+    description:
+      "Drop a white ball down the one chute whose gates mix red, yellow and blue " +
+      "into the goal color. The faster you read it and commit, the more it scores.",
+  },
+  lettershooter: {
+    title: "Letter Shooter",
+    description:
+      "Walls of letters scroll past a firing beam. Grab one letter per row to build a " +
+      "word, and cash it before a row kills it. Push your luck across five rounds.",
+  },
 };
 
 /** Share copy for a game id, or the site copy when the id is unknown/absent. */

@@ -88,6 +88,7 @@ export class NumburstGame {
     this.round = 0;        // 0-based index of the board in play
     this._roundStart = 0;  // this.score at the top of the current round
     this._roundScores = []; // each round's own contribution, for the share
+    this._roundClears = []; // whether each round burst the WHOLE board, for PERFECT
     this._shareTimer = null;
     this.armed = null;     // bomb value currently selected, or null
     this._orbEls = new Map();
@@ -158,6 +159,7 @@ export class NumburstGame {
     this.score = 0;
     this.round = 0;
     this._roundScores = [];
+    this._roundClears = [];
     this._build();
   }
 
@@ -706,12 +708,17 @@ export class NumburstGame {
   _endRound() {
     const roundScore = this.score - this._roundStart;
     this._roundScores.push(roundScore);
+    // A board is CLEARED when every orb burst — not merely when the bombs ran
+    // out. That is the perfect line, tracked per round for the match-wide check.
+    const cleared = this.board.orbs.every((o) => !o.alive);
+    this._roundClears.push(cleared);
 
     if (this.round < ROUNDS - 1) {
       const panel = document.createElement("div");
-      panel.className = "nb-done";
+      panel.className = `nb-done${cleared ? " is-perfect" : ""}`;
       panel.innerHTML = `
         <p class="nb-done-round">Round ${this.round + 1} of ${ROUNDS}</p>
+        ${cleared ? `<p class="nb-perfect">Perfect &mdash; board cleared</p>` : ""}
         <p class="nb-done-score">+${roundScore}</p>
         <p class="nb-done-note">${this.score} so far.</p>
       `;
@@ -754,10 +761,16 @@ export class NumburstGame {
         ? `Par ${this.par} — beaten by ${this.score - this.par}.`
         : `Par ${this.par} — ${this.par - this.score} short.`;
 
+    // A perfect match is every board of the day burst to nothing — a scarcer,
+    // louder thing than beating par, so it leads the panel when it happens.
+    const perfect = this._roundClears.length === ROUNDS
+      && this._roundClears.every(Boolean);
+
     const panel = document.createElement("div");
-    panel.className = `nb-done${beat ? " is-win" : ""}`;
+    panel.className = `nb-done${perfect ? " is-perfect" : beat ? " is-win" : ""}`;
     panel.innerHTML = `
       <p class="nb-done-round">${ROUNDS} rounds complete</p>
+      ${perfect ? `<p class="nb-perfect">Perfect &mdash; every board cleared</p>` : ""}
       <p class="nb-done-score">${this.score}</p>
       <p class="nb-done-note">${parLine}</p>
     `;

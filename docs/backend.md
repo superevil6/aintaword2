@@ -14,9 +14,56 @@ the client when LS test-mode keys exist.
 | --- | --- |
 | `wrangler.toml` | Pages config + the D1 binding (`DB`) |
 | `migrations/0001_init.sql` | `users` + `results` schema |
+| `migrations/0002_stats.sql` | `stats` — anonymous aggregate play counters |
 | `functions/api/health.js` | `GET /api/health` — liveness + D1 check |
 | `functions/api/sync.js` | `POST /api/sync` — push/pull history rows by key |
+| `functions/api/stat.js` | `POST /api/stat` — bump one anonymous play counter |
+| `functions/api/stats.js` | `GET /api/stats` — Basic-Auth dashboard (funnel + trend) |
 | `functions/_utils.js` | shared `json()` helper (`_` = not routed) |
+
+## Analytics (anonymous, aggregate)
+
+`stats(day, game, event, count)` holds bare per-day counters — **no identifier,
+IP, or cookie** (unlike `results`, which is keyed by license). The client
+(`src/core/stats.js`) de-dupes on the device, so a count is "distinct devices",
+not people; it honors Do Not Track / GPC and a hub opt-out toggle. Events per
+game per day: `open` (played), `finish` (finished a round), `finish_all` (every
+difficulty). Today's live plays only — archive replays don't count. The endpoint
+is unauthenticated by design (free players count too), so treat numbers as a
+directional signal; add Cloudflare rate-limiting on `/api/stat` if inflation
+matters.
+
+### Dashboard — `GET /api/stats`
+
+A read-only, Basic-Auth page: the per-game funnel for a day (with prev/next
+nav) plus a 14-day trend. Open `https://wordems.com/api/stats` in a browser —
+it prompts for login: **any username**, password = the `STATS_TOKEN` secret.
+`?day=YYYY-MM-DD` picks a day. Fails closed: with no `STATS_TOKEN` set, it's
+locked, never open.
+
+Set the secret (it's a SECRET, not a `wrangler.toml` var):
+
+```sh
+# production
+npx wrangler pages secret put STATS_TOKEN
+# local dev — add to .dev.vars:
+echo 'STATS_TOKEN=pick-a-strong-password' >> .dev.vars
+```
+
+### Or query D1 directly
+
+```sh
+npx wrangler d1 execute wordems --remote --command \
+  "SELECT game, event, count FROM stats WHERE day = '2026-07-24' ORDER BY game, event"
+
+# Popularity + completion funnel, pivoted per game for a day:
+npx wrangler d1 execute wordems --remote --command \
+  "SELECT game,
+          MAX(CASE WHEN event='open'       THEN count END) AS opened,
+          MAX(CASE WHEN event='finish'     THEN count END) AS finished,
+          MAX(CASE WHEN event='finish_all' THEN count END) AS all_diffs
+   FROM stats WHERE day = '2026-07-24' GROUP BY game ORDER BY opened DESC"
+```
 
 ## One-time setup (needs your Cloudflare login)
 

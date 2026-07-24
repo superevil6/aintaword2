@@ -1,0 +1,164 @@
+/* Letter Shooter — styles, all scoped under `.ls` (added to the mount container
+   by game.js). Leans on the shared design tokens (--bg, --fg, --good, --bad,
+   --accent, --radius) and defines its own namespaced locals. CELL (56px) is
+   mirrored from game.js — the scrolling tiles are that wide. */
+
+.ls {
+  --ls-ink: var(--fg);
+  --ls-dim: var(--fg-dim);
+  --ls-panel: var(--bg-2);
+  --ls-beam: var(--accent);
+  --ls-good: var(--good);
+  --ls-bad: var(--bad);
+  --ls-gold: #e3b341;
+  --ls-cell: 56px;
+  color: var(--ls-ink);
+}
+
+.ls-wrap { max-width: 560px; margin: 0 auto; padding: 8px 14px 28px; }
+.ls-title { font-size: 1.7rem; margin: 8px 0 6px; letter-spacing: 0.5px; }
+.ls-sub { color: var(--ls-dim); line-height: 1.5; margin: 0 0 14px; }
+.ls-foot { color: var(--ls-dim); font-size: 0.85rem; margin-top: 16px; text-align: center; }
+.ls-note { color: var(--ls-bad); text-align: center; margin: 14px 0; }
+
+/* ── level picker ─────────────────────────────────────────────────────────── */
+.ls-levels { display: flex; flex-direction: column; gap: 10px; margin: 6px 0; }
+.ls-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius); background: var(--ls-panel); color: inherit;
+  font: inherit; text-align: left; cursor: pointer; transition: border-color 0.15s, transform 0.05s;
+}
+.ls-card:hover:not([disabled]) { border-color: var(--ls-beam); }
+.ls-card:active:not([disabled]) { transform: translateY(1px); }
+.ls-card[disabled] { opacity: 0.45; cursor: default; }
+.ls-card-main { display: flex; flex-direction: column; gap: 3px; }
+.ls-card-main b { font-size: 1.1rem; }
+.ls-card-main small { color: var(--ls-dim); }
+.ls-card-stat { color: var(--ls-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ls-card-stat.played { color: var(--ls-good); }
+
+/* ── the how-to demo: a stack of rows, bottom active under a beam; grab a
+   letter and the row is consumed as the stack drops down a fresh row. ─────── */
+.ls-demo { margin: 4px 0 16px; padding: 12px; border-radius: var(--radius); background: var(--ls-panel); }
+.ls-demo-stage { position: relative; height: 112px; overflow: hidden; border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.03)); }
+.ls-demo-track { position: absolute; top: 0; left: 0; right: 0;
+  display: flex; flex-direction: column; gap: 5px; will-change: transform; }
+.ls-demo-row { height: 34px; overflow: hidden; opacity: 0.4; }
+.ls-demo-row.active { opacity: 1; }
+.ls-demo-rtrack { display: flex; width: max-content; white-space: nowrap; will-change: transform; }
+.ls-demo-cell { flex: none; width: 34px; height: 34px; display: grid; place-items: center;
+  font-weight: 700; font-size: 0.95rem; color: var(--ls-ink); }
+.ls-demo-cell.grabbed { color: var(--ls-beam); transform: scale(1.18); transition: transform 0.15s ease; }
+.ls-demo-beam { position: absolute; top: 0; bottom: 0; left: 50%; width: 38px; transform: translateX(-50%);
+  border-inline: 1px solid rgba(124, 92, 255, 0.5);
+  background: linear-gradient(180deg, rgba(124, 92, 255, 0.04), rgba(124, 92, 255, 0.14)); pointer-events: none; }
+.ls-demo-hud { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 10px; }
+.ls-demo-ammo { width: 32px; height: 32px; display: grid; place-items: center;
+  border: 2px solid var(--ls-beam); border-radius: 8px; color: var(--ls-beam); font-weight: 800; }
+.ls-demo-word { font-weight: 800; font-size: 1.25rem; letter-spacing: 3px; min-height: 1.3em; }
+.ls-demo-word.cash { color: var(--ls-gold); }
+.ls-demo-caption { color: var(--ls-dim); font-size: 0.85rem; text-align: center; margin: 8px 0 0; min-height: 2.4em; }
+
+/* ── play screen ──────────────────────────────────────────────────────────── */
+.ls-hud { display: flex; align-items: center; gap: 12px; padding: 4px 2px 10px; font-size: 0.9rem; color: var(--ls-dim); }
+.ls-hud .ls-back { margin-right: auto; }
+.ls-hud-stat b { color: var(--ls-ink); font-variant-numeric: tabular-nums; }
+.ls-back {
+  background: none; border: none; color: var(--ls-dim); font: inherit; cursor: pointer; padding: 4px 2px;
+}
+.ls-back:hover { color: var(--ls-ink); }
+
+.ls-stage {
+  position: relative; height: 324px; overflow: hidden; border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.06); touch-action: manipulation; cursor: pointer;
+}
+.ls-rows { position: absolute; left: 0; right: 0; top: 10px; }
+.ls-strip { position: relative; height: var(--ls-cell); margin-bottom: 6px; overflow: hidden;
+  border-block: 1px solid rgba(255, 255, 255, 0.03); }
+.ls-strip.active { background: rgba(124, 92, 255, 0.06); }
+.ls-track { position: absolute; top: 0; left: 0; height: var(--ls-cell); white-space: nowrap; will-change: transform; }
+.ls-cell {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ls-cell); height: var(--ls-cell); font-size: 1.7rem; font-weight: 700;
+  vertical-align: top; color: var(--ls-ink);
+}
+.ls-col {
+  position: absolute; top: 10px; left: 50%; width: var(--ls-cell); transform: translateX(-50%);
+  border-inline: 1px solid rgba(124, 92, 255, 0.45);
+  background: linear-gradient(180deg, rgba(124, 92, 255, 0.03), rgba(124, 92, 255, 0.12));
+  pointer-events: none; z-index: 2;
+}
+.ls-aim {
+  position: absolute; left: 50%; width: var(--ls-cell); transform: translateX(-50%);
+  border: 2px solid var(--ls-beam); border-radius: 8px; box-shadow: 0 0 16px rgba(124, 92, 255, 0.4);
+  pointer-events: none; z-index: 3;
+}
+/* The current word + ammo "launcher" live in their own strip BELOW the stage,
+   so nothing overlaps the scrolling rows or the aim highlight. */
+.ls-current { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 10px 0 0; }
+.ls-ammo {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center;
+  border: 2px solid var(--ls-beam); border-radius: 10px; color: var(--ls-beam);
+  font-size: 1.4rem; font-weight: 800;
+}
+.ls-word { font-size: 2rem; font-weight: 800; letter-spacing: 5px; min-height: 1.3em; line-height: 1.3; }
+.ls-word .is-word { color: var(--ls-gold); }
+.ls-reach { text-align: center; color: var(--ls-dim); font-size: 0.8rem;
+  min-height: 1.3em; margin: 4px 0 2px; padding: 0 8px; }
+.ls-flash { position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0; }
+.ls-toast {
+  position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 7;
+  font-weight: 800; opacity: 0; transition: opacity 0.12s; text-shadow: 0 2px 8px #000; font-size: 1.05rem;
+}
+.ls-toast[data-kind="bust"] { color: var(--ls-bad); }
+.ls-toast[data-kind="good"] { color: var(--ls-gold); }
+.ls-toast[data-kind="dim"] { color: var(--ls-dim); }
+
+.ls-controls { display: flex; gap: 10px; margin: 12px 0 8px; }
+.ls-fire, .ls-cash {
+  flex: 1; padding: 13px; border-radius: var(--radius); border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--ls-panel); color: var(--ls-ink); font: inherit; font-weight: 700; cursor: pointer;
+}
+.ls-fire:active, .ls-cash:active { transform: translateY(1px); }
+.ls-fire { border-color: rgba(124, 92, 255, 0.5); }
+.ls-cash.ready { border-color: var(--ls-gold); color: var(--ls-gold); }
+.ls-hint { color: var(--ls-dim); font-size: 0.82rem; text-align: center; margin: 6px 0 0; line-height: 1.5; }
+
+/* ── result screen ────────────────────────────────────────────────────────── */
+.ls-result { margin: 14px 0; }
+.ls-receipt { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.ls-rc-row { display: flex; align-items: center; gap: 10px; }
+.ls-rc-n { color: var(--ls-dim); width: 2em; font-variant-numeric: tabular-nums; }
+.ls-rc-bar { height: 16px; border-radius: 5px; background: var(--ls-gold);
+  width: calc(var(--n) * 20px); }
+.ls-rc-miss { color: var(--ls-bad); font-size: 0.85rem; }
+.ls-rc-v { margin-left: auto; color: var(--ls-dim); font-variant-numeric: tabular-nums; }
+.ls-total { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 10px; }
+.ls-total-lbl { color: var(--ls-dim); font-variant-numeric: tabular-nums; }
+.ls-total-big { font-size: 1.8rem; font-weight: 800; }
+.ls-good { color: var(--ls-good); }
+.ls-par { color: var(--ls-gold); }
+.ls-under { color: var(--ls-dim); }
+
+.ls-reveal { margin: 12px 0; color: var(--ls-dim); }
+.ls-reveal summary { cursor: pointer; }
+.ls-opt { display: flex; flex-direction: column; gap: 4px; margin: 10px 0 6px; }
+.ls-opt-row { display: flex; align-items: center; gap: 10px; }
+.ls-opt-n { color: var(--ls-dim); width: 2em; }
+.ls-opt-word { font-weight: 700; color: var(--ls-ink); letter-spacing: 1px; }
+.ls-opt-v { margin-left: auto; color: var(--ls-dim); }
+.ls-opt-note { font-size: 0.82rem; color: var(--ls-dim); }
+
+.ls-share, .ls-again {
+  display: block; width: 100%; margin-top: 10px; padding: 13px; border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.12); background: var(--ls-panel); color: var(--ls-ink);
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.ls-share { border-color: rgba(124, 92, 255, 0.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-track { will-change: auto; }
+}

@@ -9,6 +9,7 @@
 
 import "./numburst.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { NumburstGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
 import { todaysResults } from "./results.js";
@@ -27,6 +28,7 @@ export default registerGame({
   accent: "#ff8a3d",
   tags: ["number", "spatial"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     // No difficulty resolved here: the game opens on its own picker, the same

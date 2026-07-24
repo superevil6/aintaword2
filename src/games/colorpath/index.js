@@ -5,6 +5,7 @@
 
 import "./colorpath.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { ColorPathGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
 import { todayKey, todaysResults } from "./results.js";
@@ -22,6 +23,7 @@ export default registerGame({
   accent: "#e07818",
   tags: ["color", "spatial"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     // No difficulty is resolved here: the game opens on its own picker, the

@@ -30,6 +30,63 @@
   font-size: 1rem;
 }
 
+/* ── Archive banner (hub in archive mode) ───────────────────────────────── */
+
+.hub-archive {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+/* The date chip doubles as the "change date" control — clicking it reopens the
+   calendar (data-archive-open). */
+.hub-archive-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 999px;
+  color: var(--fg);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.hub-archive-chip:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-2));
+}
+.hub-archive-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.hub-archive-eyebrow {
+  color: var(--fg-dim);
+}
+.hub-archive-date {
+  font-weight: 700;
+}
+
+.hub-archive-today {
+  background: none;
+  border: none;
+  padding: 0.2rem 0.3rem;
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.hub-archive-today:hover {
+  color: var(--fg);
+}
+.hub-archive-today:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Theme picker — a row of colour swatches under the subtitle. */
 /* ── Sections ───────────────────────────────────────────────────────────── */
 
@@ -134,6 +191,12 @@
   background: var(--card-accent);
   border-radius: 50%;
 }
+/* A star (every difficulty cleared) outranks a plain tick — gold, so a fully
+   finished game reads as a cut above a partly-played one at a glance. */
+.hub-card-tick.is-all {
+  color: #3a2c00;
+  background: #f4c430;
+}
 
 /* Current streak pill, opposite the tick so the two never overlap. Quiet by
    default; the flame carries the meaning. */
@@ -226,4 +289,78 @@
   .hub-card:hover {
     transform: none;
   }
+}
+
+/* ── Footer: anonymous-stats opt-out ────────────────────────────────────── */
+
+.hub-footer {
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+}
+
+/* A compact switch built from a visually-hidden checkbox + a track. */
+.hub-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+.hub-stat-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.hub-stat-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.2rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 22%, transparent);
+  transition: background 0.15s;
+}
+.hub-stat-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.25rem - 4px);
+  height: calc(1.25rem - 4px);
+  border-radius: 50%;
+  background: var(--fg);
+  transition: transform 0.15s;
+}
+.hub-stat-input:checked + .hub-stat-track {
+  background: var(--accent);
+}
+.hub-stat-input:checked + .hub-stat-track::after {
+  transform: translateX(0.95rem);
+}
+.hub-stat-input:focus-visible + .hub-stat-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.hub-stat-input:disabled + .hub-stat-track {
+  opacity: 0.5;
+  cursor: default;
+}
+.hub-stat:has(.hub-stat-input:disabled) {
+  cursor: default;
+  color: var(--fg-dim);
+}
+
+.hub-foot-note {
+  margin: 0;
+  max-width: 34rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--fg-dim);
 }

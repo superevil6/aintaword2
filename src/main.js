@@ -13,7 +13,7 @@
 import "./styles/global.css";
 import { SITE_NAME, GAME_PARAM, DAY_PARAM, ARCHIVE_START } from "./config.js";
 import { mountHub } from "./hub.js";
-import { getGame, relatedGames } from "./core/registry.js";
+import { getGame, allGames, relatedGames } from "./core/registry.js";
 import { ROUND_COMPLETE } from "./core/lifecycle.js";
 import { isSupporter, onChange, installDevBackdoor } from "./core/entitlements.js";
 import { initTheme } from "./core/theme.js";
@@ -23,6 +23,7 @@ import { openArchive, formatDay } from "./core/archive.js";
 import { todayKey } from "./core/daily.js";
 import { playedDates } from "./core/history.js";
 import { startSync, stopSync } from "./core/sync.js";
+import { recordOpen, recordFinish } from "./core/stats.js";
 import "./games/aintaword/index.js";  // side effect: registers the game
 import "./games/colorpath/index.js"; // side effect: registers the game
 import "./games/wordiamond/index.js"; // side effect: registers the game
@@ -32,6 +33,8 @@ import "./games/vanityplate/index.js"; // side effect: registers the game
 import "./games/rootword/index.js";  // side effect: registers the game
 import "./games/mirrorword/index.js"; // side effect: registers the game
 import "./games/storey/index.js";    // side effect: registers the game
+import "./games/colordrop/index.js"; // side effect: registers the game
+import "./games/lettershooter/index.js"; // side effect: registers the game
 
 const app = document.getElementById("app");
 
@@ -140,7 +143,9 @@ function writeUrl(gameId, { replace = false, day = null } = {}) {
   const url = new URL(location.href);
   if (gameId) url.searchParams.set(GAME_PARAM, gameId);
   else url.searchParams.delete(GAME_PARAM);
-  if (gameId && day) url.searchParams.set(DAY_PARAM, day);
+  // A day is valid with OR without a game now: in a game it's a replay, on the
+  // hub it's "browsing that day's board". normalizeDay has already dropped today.
+  if (day) url.searchParams.set(DAY_PARAM, day);
   else url.searchParams.delete(DAY_PARAM);
   if (url.href === location.href) return;
   history[replace ? "replaceState" : "pushState"](
@@ -172,9 +177,9 @@ function setChrome(gameTitle) {
  * router trusts — so it's correct after any navigation.
  */
 function syncArchiveButton() {
-  const gameId = routedGameId();
-  const inGame = Boolean(gameId && getGame(gameId));
-  const show = inGame && isSupporter();
+  // The archive is a supporter perk, now reachable from the hub as well as from
+  // a game — on the hub it browses a past day's completion, in a game it replays.
+  const show = isSupporter();
   archiveBtn.hidden = !show;
   if (!show) return;
 
@@ -187,22 +192,33 @@ function syncArchiveButton() {
   );
 }
 
-// Opening the calendar and, on a pick, re-routing the current game to that day.
-// Picking today (or the current day) resolves to today's key → day cleared, so
-// the same button doubles as the way back to the live puzzle.
+/** Every date any game was completed on — for the hub calendar's played dots. */
+function anyGamePlayedDates() {
+  const set = new Set();
+  for (const g of allGames()) for (const d of playedDates(g.id)) set.add(d);
+  return [...set];
+}
+
+// Opening the calendar and, on a pick, routing to that day. In a game it re-routes
+// that game (a replay); on the hub it switches the hub to browse that day. Picking
+// today resolves to today's key → day cleared, so the button doubles as the way
+// back to the live puzzle from either place.
 archiveBtn.addEventListener("click", async () => {
   const gameId = routedGameId();
-  if (!gameId || !getGame(gameId)) return;
+  const inGame = Boolean(gameId && getGame(gameId));
   const picked = await openArchive({
     start: ARCHIVE_START,
     today: todayKey(),
     current: normalizeDay(routedDay()) || todayKey(),
     // Uniform history store is keyed by the same id the router uses, so the
-    // shell can mark completed days without any per-game hook.
-    played: playedDates(gameId),
+    // shell can mark completed days without any per-game hook. On the hub, dot
+    // every date any game was played; in a game, just that game's dates.
+    played: inGame ? playedDates(gameId) : anyGamePlayedDates(),
   });
   if (picked == null) return; // dismissed
-  goTo(gameId, { day: normalizeDay(picked) });
+  const day = normalizeDay(picked);
+  if (inGame) goTo(gameId, { day });
+  else goTo(null, { day });
 });
 
 function teardown() {
@@ -256,18 +272,34 @@ function showCrossSell() {
 }
 
 // A round-complete bubbles up from the playing game's root to the view. Games
-// mount inside `view`, so one listener here catches every game's finish.
-view.addEventListener(ROUND_COMPLETE, showCrossSell);
+// mount inside `view`, so one listener here catches every game's finish — it
+// drives both the cross-sell pill and the anonymous finish tally.
+view.addEventListener(ROUND_COMPLETE, () => {
+  const id = routedGameId();
+  const game = id ? getGame(id) : null;
+  if (game) {
+    recordFinish(game.id, { day: routedDay(), difficulties: game.difficulties });
+  }
+  showCrossSell();
+});
 
 // ── Screens ───────────────────────────────────────────────────────────────
 
 async function showHub() {
   teardown();
   setChrome(null);
-  const chosen = await mountHub(view);
+  // The hub is day-aware: with ?day= set it browses that archived day, marking
+  // which games (and which fully) were played then, and enters a picked game at
+  // that day. Exiting archive or changing the date just re-routes and re-mounts.
+  const day = normalizeDay(routedDay());
+  const chosen = await mountHub(view, {
+    day,
+    onExitArchive: () => goTo(null, { day: null }),
+    onOpenArchive: () => archiveBtn.click(),
+  });
   // Resolves only when a card in THIS hub render is clicked; a hub replaced by
   // navigation simply never resolves, so there is no stale-selection race.
-  await goTo(chosen.id);
+  await goTo(chosen.id, { day });
 }
 
 async function mountGame(game, { day = null } = {}) {
@@ -279,6 +311,9 @@ async function mountGame(game, { day = null } = {}) {
     // day-scoped result store, which treats a non-today day as an ephemeral
     // archive replay (playable, but not recorded).
     cleanup = await game.mount(view, day ? { day } : {});
+    // Anonymous tally: this device opened this game today (skipped for archive
+    // replays and under Do Not Track / opt-out; see core/stats.js).
+    recordOpen(game.id, { day });
   } catch (err) {
     console.error(err);
     view.innerHTML = `<div class="boot boot-error">Couldn't start the game.<br><small>${escapeHtml(
@@ -301,16 +336,21 @@ async function goTo(id, { push = true, replace = false, day = null } = {}) {
     // Unknown game in the URL — strip it rather than leave a dead link in the
     // address bar, and show the hub.
     writeUrl(null, { replace: true });
+    syncArchiveButton();
     return showHub();
   }
 
-  // A day only means anything inside a game, and only a valid past one routes.
-  const routeDay = game ? normalizeDay(day) : null;
+  // A valid past day routes whether we're entering a game (a replay) or staying
+  // on the hub (browsing that day's completion); today normalizes to null.
+  const routeDay = normalizeDay(day);
 
   if (push) writeUrl(game ? game.id : null, { replace, day: routeDay });
+  // Sync the bar BEFORE mounting: showHub() awaits a game pick and so never
+  // returns while the hub is up, so anything after its await would never run
+  // on the hub. The button reads the URL (just written), not the mounted view.
+  syncArchiveButton();
   if (game) await mountGame(game, { day: routeDay });
   else await showHub();
-  syncArchiveButton();
 }
 
 /** Render whatever the current URL says. Used on boot and on back/forward. */

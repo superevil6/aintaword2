@@ -5,6 +5,7 @@
 
 import "./rootword.css";
 import { registerGame } from "../../core/registry.js";
+import { DIFFICULTY_ORDER } from "./difficulty.js";
 import { RootwordGame } from "./game.js";
 import { loadDay } from "./dailySet.js";
 import { todaysResults } from "./results.js";
@@ -22,6 +23,7 @@ export default registerGame({
   accent: "#4fc978",
   tags: ["word", "grid"],
   playedToday: () => Object.keys(todaysResults()).length > 0,
+  difficulties: DIFFICULTY_ORDER,
 
   async mount(container, opts = {}) {
     // Loaded on demand so the ~45 KB gzipped word pool stays out of the initial
