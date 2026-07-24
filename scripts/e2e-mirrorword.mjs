@@ -67,13 +67,28 @@ for (const id of DIFFICULTY_ORDER) {
   const prof = DIFFICULTIES[id];
   const best = g.puzzle.best;
 
-  // Center hint: present on Medium/Hard, drawn from the optimal, and erasable.
+  // Center hint: present on Easy/Medium, drawn from the optimal, and erasable.
   if (prof.hint) {
     const keys = [...g.hint.keys()];
     ok(keys.length === prof.hint, `${prof.hint} center hint(s) shown`);
-    const [hr, hc] = keys[0].split(",").map(Number);
-    ok(g.grid[hr][hc] === best[hr][hc], "hint is the optimal center letter");
-    ok(!g.given.has(keys[0]), "hint cell is erasable, not locked");
+    // EVERY hint cell, not just the first. Checking only keys[0] let a bug hide
+    // where typing at a given cell redirected onto (1,1) and overwrote the hint
+    // there — invisible on Medium, whose keys[0] is (2,2).
+    const allOptimal = keys.every((k) => {
+      const [r, c] = k.split(",").map(Number);
+      return g.grid[r][c] === best[r][c];
+    });
+    ok(allOptimal, "every hint is the optimal center letter");
+    ok(keys.every((k) => !g.given.has(k)), "hint cells are erasable, not locked");
+
+    // Typing while a given cell is selected must not land on a hint.
+    g.selR = 0; g.selC = 0; key("z");
+    const survived = keys.every((k) => {
+      const [r, c] = k.split(",").map(Number);
+      return g.grid[r][c] === g.hint.get(k);
+    });
+    ok(survived, "typing at a given cell doesn't overwrite a hint");
+    g._clear();
   } else {
     ok(!g.hint || g.hint.size === 0, "no hint on this tier");
   }
@@ -140,7 +155,16 @@ section("Legacy blob migrates");
 section("Editing");
 {
   const g = mount({ difficulty: "easy" });
-  const [fr, fc] = g._firstFillable();
+  // An OFF-DIAGONAL, non-hint cell. Off-diagonal so "fills its mirror" compares
+  // two distinct cells rather than one cell with itself; non-hint so _clear()
+  // restoring the scaffold (covered under "Hint erasability") doesn't masquerade
+  // as Clear failing to empty the board.
+  let fr = -1, fc = -1;
+  outer: for (let r = 0; r < g.puzzle.size; r++) for (let c = 0; c < g.puzzle.size; c++) {
+    if (r === c || !g._isFillable(r, c) || g.hint.has(r + "," + c)) continue;
+    fr = r; fc = c; break outer;
+  }
+  ok(fr >= 0, "found an off-diagonal non-hint cell to edit");
   g.selR = fr; g.selC = fc; key("q");
   ok(g.grid[fr][fc] === "q" && g.grid[fc][fr] === "q", "press fills cell and its mirror");
   key("Backspace");

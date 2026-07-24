@@ -56,22 +56,27 @@ for (const [id, s] of entries) {
 }
 if (!failures) console.log(`  ✓ ${entries.length} blurbs present, self-contained, and short enough`);
 
-// ── the generated page carries them and bounces to the app ─────────────────
+// ── the generated page is real, indexable content with a Play link ─────────
 section("generated pages");
 for (const id of Object.keys(GAME_SHARE)) {
   const html = pageFor(id, "");
   const { title, description } = GAME_SHARE[id];
   const has = (needle, what) => { if (!html.includes(needle)) fail(`${id}: page is missing ${what}`); };
-  has(`<title>${title}</title>`, "its title");
+  has(`${title} — free daily puzzle`, "its title");
   has(`property="og:title" content="${title}"`, "og:title");
   has(`content="${description}"`, "the description");
-  has(`?game=${id}`, "the redirect back into the app");
-  // Both a JS redirect and a meta-refresh, so a human always lands in the game
-  // whether or not scripts run.
-  has(`location.replace`, "the script redirect");
-  has(`http-equiv="refresh"`, "the no-JS refresh fallback");
+  has(`<h1>${title}</h1>`, "its <h1> heading");
+  has(`class="play"`, "the Play button");
+  has(`?game=${id}`, "the Play link into the app");
+
+  // With a known origin it must be self-canonical and carry structured data —
+  // this is what makes the page indexable rather than a thin redirect.
+  const abs = pageFor(id, "https://wordems.com");
+  const hasAbs = (needle, what) => { if (!abs.includes(needle)) fail(`${id}: page is missing ${what}`); };
+  hasAbs(`rel="canonical" href="https://wordems.com/g/${id}/"`, "a self-canonical link");
+  hasAbs(`"@type":"VideoGame"`, "VideoGame structured data");
 }
-if (!failures) console.log(`  ✓ each page carries its own tags and redirects to ?game=<id>`);
+if (!failures) console.log(`  ✓ each page is indexable content: heading, self-canonical, structured data, Play link`);
 
 // ── the root index.html agrees with the site blurb ─────────────────────────
 section("root index.html");

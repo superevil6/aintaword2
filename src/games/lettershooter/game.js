@@ -155,6 +155,10 @@ export class LetterShooterGame {
     if (!set) return this.showPicker();
     this.profile = getDifficulty(id);
     this.set = set;
+    // Already played this day + tier? Show the stored result rather than
+    // silently starting a second run over the same board.
+    const done = getResult(id, this.day);
+    if (done) return this._showResult(done, { replay: true });
     this.seed = dailySeedFor(id, this.day);
     this.round = 0;
     this.score = 0;
@@ -457,20 +461,38 @@ export class LetterShooterGame {
   // ── end of run ───────────────────────────────────────────────────────────────
 
   finish() {
-    this.over = true;
-    this._stopLoop();
-    this._unbindKeys();
-
     const par = this.set.par;
     const score = this.score;
     const lengths = Array.from({ length: this.profile.rounds }, (_, i) => this.roundLengths[i] || 0);
     const rounds = lengths.filter((n) => n > 0).length;
+    const result = { score, par, rounds, lengths };
+
+    saveResult(this.profile.id, result, this.day);
+    const record = recordBest(this.profile.id, result);
+    this._showResult(result, { replay: false, record });
+  }
+
+  /**
+   * The end-of-run screen, rendered from a result object — either the run just
+   * finished, or the one stored from an earlier visit (`replay`), so revisiting
+   * a completed daily shows what you scored instead of restarting it.
+   */
+  _showResult(result, { replay = false, record = false } = {}) {
+    this.over = true;
+    this._stopLoop();
+    this._unbindKeys();
+    this._teardownTutorial();
+
+    // Prefer today's freshly-loaded par over whatever was stored, so an old
+    // result saved before a rebuild can't keep showing a stale target.
+    const par = this.set?.par ?? result.par;
+    const score = result.score;
+    const rounds = result.rounds ?? 0;
+    // Older stored results may predate the per-round detail — tolerate that.
+    const lengths = Array.isArray(result.lengths) ? result.lengths : [];
     const diff = score - par;
     const rel = diff === 0 ? "on par" : diff > 0 ? `+${diff} above par` : `${-diff} below par`;
     const tone = diff > 0 ? "good" : diff === 0 ? "par" : "under";
-
-    saveResult(this.profile.id, { score, par, rounds }, this.day);
-    const record = recordBest(this.profile.id, { score, par, rounds });
 
     const receipt = lengths
       .map((n, i) => {
@@ -484,10 +506,15 @@ export class LetterShooterGame {
       .map((b, i) => `<div class="ls-opt-row"><span class="ls-opt-n">R${i + 1}</span><span class="ls-opt-word">${b.word || "—"}</span><span class="ls-opt-v">+${b.score}</span></div>`)
       .join("");
 
+    const playedNote = replay
+      ? `<p class="ls-played">You've already played today's ${this.profile.name} — here's how it went. A new board arrives tomorrow.</p>`
+      : "";
+
     this.root.innerHTML = `
       <div class="ls-wrap">
         <button class="ls-back" type="button">← levels</button>
         <h1 class="ls-title">${this.profile.name}</h1>
+        ${playedNote}
         <div class="ls-result">
           <div class="ls-receipt">${receipt}</div>
           <div class="ls-total">

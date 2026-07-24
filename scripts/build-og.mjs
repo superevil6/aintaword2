@@ -47,6 +47,9 @@ const ACCENTS = {
   rootword: "#4fc978",
   mirrorword: "#49c6e0",
   storey: "#d0553f",
+  colordrop: "#d84a94",
+  lettershooter: "#7c5cff",
+  sigilsweep: "#b98cff",
 };
 
 const esc = (s) =>
@@ -219,6 +222,17 @@ function faviconSvg() {
 </svg>`;
 }
 
+// PWA "maskable" icon: the same gem, but full-bleed (no rounded tile) with the
+// gem kept inside the central ~60% safe zone, so a launcher can crop it to any
+// shape — circle, squircle, rounded square — without clipping the mark.
+function maskableIconSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="${BG_2}"/>
+  <path d="M50 27 L72 43 L50 79 L28 43 Z" fill="${BRAND}"/>
+  <path d="M28 43 H72 M50 27 L41 43 L50 79 M50 27 L59 43 L50 79" fill="none" stroke="${BG}" stroke-width="1.6" stroke-opacity="0.6"/>
+</svg>`;
+}
+
 // ── Run ─────────────────────────────────────────────────────────────────────
 
 function main() {
@@ -231,6 +245,12 @@ function main() {
   render(favSvg, join(OUT, "favicon-16.png"), { width: 16, height: 16 });
   render(favSvg, join(OUT, "apple-touch-icon.png"), { width: 180, height: 180 });
   console.log("favicon: svg + 32 + 16 + apple-touch-icon");
+
+  // PWA install icons (referenced by public/manifest.webmanifest).
+  render(favSvg, join(OUT, "icon-192.png"), { width: 192, height: 192 });
+  render(favSvg, join(OUT, "icon-512.png"), { width: 512, height: 512 });
+  render(maskableIconSvg(), join(OUT, "icon-maskable-512.png"), { width: 512, height: 512 });
+  console.log("pwa icons: 192 + 512 + maskable-512");
 
   // Site OG card.
   render(siteCard(), join(OG_DIR, "site.png"), { width: 1200, height: 630 });

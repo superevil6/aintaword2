@@ -114,8 +114,8 @@ export class MirrorwordGame {
         <li>Many squares are valid — <strong>rarer letters score more</strong>, and off the diagonal
           they count <strong>double</strong> (they're mirrored).</li>
         <li>Every daily puzzle has a true best score, its <strong>par</strong>. Chase it.</li>
-        <li>On Medium, the faint <strong>amber letters</strong> down the middle of the diagonal are a
-          starting hint — keep them, or erase them and go your own way.</li>
+        <li>On Easy and Medium, the faint <strong>amber letters</strong> down the middle of the
+          diagonal are a starting hint — keep them, or erase them and go your own way.</li>
       </ul>
     `;
 
@@ -350,7 +350,13 @@ export class MirrorwordGame {
   }
   _press(ch) {
     if (!this._isFillable(this.selR, this.selC)) {
-      const f = this._firstFillable(); this.selR = f[0]; this.selC = f[1];
+      // Prefer the first EMPTY cell, same as the advance below. Redirecting to
+      // _firstFillable outright meant typing while a given cell was selected
+      // landed on (1,1) — a hint cell on every tier that has hints — and wrote
+      // straight over the hint. Fall back to _firstFillable only when the board
+      // has no empty cell left to take the letter.
+      const f = this._firstEmptyFillable() || this._firstFillable();
+      this.selR = f[0]; this.selC = f[1];
     }
     this._applyCell(this.selR, this.selC, ch);
     const nx = this._nextEmptyFillable(this.selR, this.selC) || this._nextFillable(this.selR, this.selC);

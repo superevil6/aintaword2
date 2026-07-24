@@ -35,6 +35,7 @@ import "./games/mirrorword/index.js"; // side effect: registers the game
 import "./games/storey/index.js";    // side effect: registers the game
 import "./games/colordrop/index.js"; // side effect: registers the game
 import "./games/lettershooter/index.js"; // side effect: registers the game
+import "./games/sigilsweep/index.js"; // side effect: registers the game
 
 const app = document.getElementById("app");
 
@@ -56,7 +57,9 @@ bar.innerHTML = `
 const view = document.createElement("div");
 view.className = "app-view";
 
-app.append(bar, view);
+// replaceChildren (not append) so the crawlable pre-render fallback that
+// scripts/share-pages.js injects into #app is cleared when the app mounts.
+app.replaceChildren(bar, view);
 
 const brandBtn  = bar.querySelector(".app-brand");
 const currentEl = bar.querySelector(".app-current");
@@ -236,8 +239,14 @@ function teardown() {
 // the sibling games — a game just announces ROUND_COMPLETE from its own root.
 
 let crossSellEl = null;
+let crossSellDismiss = null;
 
 function clearCrossSell() {
+  if (crossSellDismiss) {
+    view.removeEventListener("pointerdown", crossSellDismiss, true);
+    view.removeEventListener("keydown", crossSellDismiss, true);
+    crossSellDismiss = null;
+  }
   if (crossSellEl) crossSellEl.remove();
   crossSellEl = null;
 }
@@ -269,6 +278,19 @@ function showCrossSell() {
 
   app.appendChild(strip);
   crossSellEl = strip;
+
+  // Router navigation clears the pill via teardown(), but a player who restarts
+  // WITHIN the game — its own "Play again", a difficulty pick, any control —
+  // never routes, so the pill would hover over the live board and block it. So
+  // the next interaction inside the game view dismisses the suggestion: they've
+  // moved on without taking it. Capture phase, and no stopPropagation, so the
+  // game still receives the very interaction that closed the pill. pointerdown
+  // rather than click, so the tap that finished the round (already dispatched
+  // before this listener is attached) can't immediately re-close it. The pill
+  // lives in `app`, not `view`, so its own buttons never trip this.
+  crossSellDismiss = () => clearCrossSell();
+  view.addEventListener("pointerdown", crossSellDismiss, true);
+  view.addEventListener("keydown", crossSellDismiss, true);
 }
 
 // A round-complete bubbles up from the playing game's root to the view. Games

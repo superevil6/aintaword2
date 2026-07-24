@@ -128,6 +128,7 @@
 .ls-hint { color: var(--ls-dim); font-size: 0.82rem; text-align: center; margin: 6px 0 0; line-height: 1.5; }
 
 /* ── result screen ────────────────────────────────────────────────────────── */
+.ls-played { color: var(--ls-dim); font-size: 0.9rem; margin: 6px 0 0; line-height: 1.5; }
 .ls-result { margin: 14px 0; }
 .ls-receipt { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .ls-rc-row { display: flex; align-items: center; gap: 10px; }

@@ -1,0 +1,159 @@
+/* Sigil Sweep styles. Prefix sg-. Reuses the shell palette vars (global.css).
+   The marks themselves are drawn on <canvas> by render.js; CSS only frames the
+   stage, options and chrome. */
+
+.sg {
+  --sg-accent: #b98cff;
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem clamp(0.4rem, 2vw, 1rem) 0.9rem;
+}
+.sg--select { justify-content: center; }
+
+/* ── Cards (picker + result) ────────────────────────────────────────────── */
+
+.sg-card {
+  width: 100%; max-width: 480px; max-height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
+  padding: 1.1rem; background: var(--bg-2);
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius);
+  text-align: center;
+}
+.sg-card-title { margin: 0; font-size: clamp(1.6rem, 6vw, 2.2rem); font-weight: 800; letter-spacing: -0.03em; }
+.sg-card-lede { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--fg-dim); }
+.sg-rules {
+  margin: 0; padding-left: 1.1rem; text-align: left; font-size: 0.8rem;
+  line-height: 1.4; color: var(--fg-dim); align-self: stretch;
+}
+.sg-rules li { margin: 0.15rem 0; }
+
+/* ── Tutorial demo ──────────────────────────────────────────────────────── */
+
+.sg-demo {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0.4rem; border-radius: 14px;
+  background: radial-gradient(80% 80% at 50% 40%, rgba(185, 140, 255, 0.10), transparent 70%);
+}
+.sg-demo-canvas { display: block; }
+
+/* ── Difficulty picker ──────────────────────────────────────────────────── */
+
+.sg-picker { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.sg-pick {
+  appearance: none; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; width: 100%; padding: 0.7rem 0.9rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.14); border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-2) 82%, #000); color: var(--fg); cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.sg-pick:hover { border-color: var(--sg-accent); transform: translateY(-1px); }
+.sg-pick:focus-visible { outline: 2px solid var(--sg-accent); outline-offset: 3px; }
+.sg-pick-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; }
+.sg-pick-label { font-weight: 700; font-size: 1.05rem; }
+.sg-pick-blurb { font-size: 0.76rem; color: var(--fg-dim); line-height: 1.3; }
+.sg-pick-spec { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+.sg-pick-score { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.sg-pick-sub { font-size: 0.7rem; color: var(--fg-dim); }
+.sg-pick.is-done { border-color: rgba(51, 214, 159, 0.35); background: linear-gradient(180deg, rgba(51, 214, 159, 0.08), color-mix(in srgb, var(--bg-2) 82%, #000)); }
+.sg-pick.is-done .sg-pick-score { color: var(--good); }
+
+/* ── HUD ────────────────────────────────────────────────────────────────── */
+
+.sg-hud {
+  display: flex; justify-content: center; align-items: center;
+  gap: clamp(0.9rem, 5vw, 2rem); width: 100%; max-width: 460px;
+}
+.sg-hud-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.sg-hud-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-dim); }
+.sg-hud-value, .sg-worth, .sg-score { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sg-score { color: var(--sg-accent); }
+
+/* ── Stage: the rotating mark + the worth meter ─────────────────────────── */
+
+.sg-stage {
+  display: flex; flex-direction: column; align-items: center; gap: 0.55rem;
+  margin: auto 0;
+}
+.sg-sweep {
+  display: block;
+  border-radius: 50%;
+  background:
+    radial-gradient(70% 70% at 50% 45%, rgba(185, 140, 255, 0.08), transparent 72%),
+    color-mix(in srgb, var(--bg-2) 70%, #000);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+}
+.sg-meter {
+  width: 340px; max-width: 78vw; height: 5px;
+  background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden;
+}
+.sg-meter-fill {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--sg-accent), color-mix(in srgb, var(--sg-accent) 55%, #fff));
+  /* width is set inline every animation frame — no CSS transition, or it lags
+     behind the sweep and reads as a laggy meter rather than a live one. */
+}
+
+/* ── Options ────────────────────────────────────────────────────────────── */
+
+.sg-options {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+  width: 100%; max-width: 560px;
+}
+.sg-opt {
+  appearance: none; padding: 4px; cursor: pointer;
+  background: color-mix(in srgb, var(--bg-2) 78%, #000);
+  border: 1.5px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
+  transition: border-color 0.13s, transform 0.1s, opacity 0.2s;
+  line-height: 0;
+}
+.sg-opt:hover:not(:disabled) { border-color: var(--sg-accent); transform: translateY(-2px); }
+.sg-opt:focus-visible { outline: 2px solid var(--sg-accent); outline-offset: 3px; }
+.sg-opt:disabled { cursor: default; }
+.sg-opt.is-dead { opacity: 0.28; }
+.sg-opt.is-wrong { border-color: var(--bad, #ff6b6b); }
+.sg-opt.is-right, .sg-opt.is-answer { border-color: var(--good); box-shadow: 0 0 0 1.5px var(--good) inset; opacity: 1; }
+
+/* ── Foot / outcome ─────────────────────────────────────────────────────── */
+
+.sg-foot { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; min-height: 2.5rem; text-align: center; }
+.sg-hint { margin: 0; font-size: 0.78rem; color: var(--fg-dim); }
+.sg-outcome { margin: 0; font-size: 0.95rem; font-weight: 700; }
+
+.sg-action-btn {
+  appearance: none; cursor: pointer; font: inherit; font-weight: 700;
+  padding: 0.55rem 1.3rem; border-radius: 11px;
+  border: 1.5px solid var(--sg-accent);
+  background: var(--sg-accent); color: #1a1030;
+  transition: filter 0.13s, transform 0.1s;
+}
+.sg-action-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.sg-action-btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.sg-action-btn.is-done { background: var(--good); border-color: var(--good); }
+
+/* ── Result screen ──────────────────────────────────────────────────────── */
+
+.sg-done { gap: 0.4rem; }
+.sg-win-label { margin: 0; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-dim); }
+.sg-win-score { margin: 0; font-size: clamp(2.6rem, 12vw, 3.6rem); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--sg-accent); }
+.sg-win-score-label { margin: 0 0 0.3rem; font-size: 0.82rem; color: var(--fg-dim); }
+.sg-win-hits { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.sg-win-record { margin: 0.2rem 0 0; color: var(--good); font-weight: 800; }
+.sg-win-best { margin: 0.2rem 0 0; color: var(--fg-dim); font-size: 0.85rem; }
+.sg-win-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 0.6rem; }
+.sg-win-menu { background: transparent; color: var(--fg); border-color: rgba(255, 255, 255, 0.2); }
+.sg-share-box {
+  width: 100%; margin-top: 0.6rem; padding: 0.6rem; border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-2) 70%, #000); color: var(--fg);
+  border: 1px solid rgba(255, 255, 255, 0.14); font: inherit; font-size: 0.8rem; resize: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-opt, .sg-pick, .sg-action-btn { transition: none; }
+}

@@ -19,6 +19,7 @@
     "storey:daily": "node scripts/build-storey-daily.mjs",
     "colordrop:daily": "node scripts/build-colordrop-daily.mjs",
     "lettershooter:daily": "node scripts/build-lettershooter-daily.mjs",
+    "sigilsweep:daily": "node scripts/build-sigilsweep-daily.mjs",
     "mirrorword:seeds": "node scripts/build-mirrorword-seeds.mjs",
     "og": "node scripts/build-og.mjs",
     "verify": "node scripts/verify.mjs",
@@ -32,6 +33,7 @@
     "verify:storey": "node scripts/verify-storey.mjs",
     "verify:colordrop": "node scripts/verify-colordrop.mjs",
     "verify:lettershooter": "node scripts/verify-lettershooter.mjs",
+    "verify:sigilsweep": "node scripts/verify-sigilsweep.mjs",
     "e2e": "node scripts/e2e.mjs",
     "e2e:colorpath": "node scripts/e2e-colorpath.mjs",
     "e2e:wordiamond": "node scripts/e2e-wordiamond.mjs",
@@ -41,8 +43,9 @@
     "e2e:storey": "node scripts/e2e-storey.mjs",
     "e2e:colordrop": "node scripts/e2e-colordrop.mjs",
     "e2e:lettershooter": "node scripts/e2e-lettershooter.mjs",
+    "e2e:sigilsweep": "node scripts/e2e-sigilsweep.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "test": "npm run verify && npm run verify:streak && npm run verify:colorpath && npm run verify:wordiamond && npm run verify:share && npm run verify:photonfinish && npm run verify:mirrorword && npm run verify:vanityplate && npm run verify:storey && npm run verify:colordrop && npm run verify:lettershooter && npm run e2e && npm run e2e:colorpath && npm run e2e:wordiamond && npm run e2e:photonfinish && npm run e2e:vanityplate && npm run e2e:mirrorword && npm run e2e:storey && npm run e2e:colordrop && npm run e2e:lettershooter"
+    "test": "npm run verify && npm run verify:streak && npm run verify:colorpath && npm run verify:wordiamond && npm run verify:share && npm run verify:photonfinish && npm run verify:mirrorword && npm run verify:vanityplate && npm run verify:storey && npm run verify:colordrop && npm run verify:lettershooter && npm run verify:sigilsweep && npm run e2e &&npm run e2e:colorpath && npm run e2e:wordiamond && npm run e2e:photonfinish && npm run e2e:vanityplate && npm run e2e:mirrorword && npm run e2e:storey && npm run e2e:colordrop && npm run e2e:lettershooter && npm run e2e:sigilsweep"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

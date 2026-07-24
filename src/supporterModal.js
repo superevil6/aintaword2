@@ -73,6 +73,9 @@ function pitchHtml() {
         <li>Cross-device sync <span class="sup-tag">soon</span></li>
       </ul>
       ${buy}
+      <p class="sup-legal">Sold by Lemon Squeezy. By supporting you agree to our
+        <a href="/terms/" target="_blank" rel="noopener">Terms</a> &amp;
+        <a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a>.</p>
       <div class="sup-divider"><span>already have a key?</span></div>
       <form class="sup-form" data-act="unlock">
         <input class="sup-input" type="text" name="key" placeholder="Paste your license key"

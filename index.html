@@ -11,6 +11,25 @@
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
+    <!-- PWA: installable, standalone. Icons + colors live in the manifest;
+         these Apple-specific tags have no manifest equivalent. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Wordems" />
+
+    <link rel="canonical" href="https://wordems.com/" />
+
+    <!-- Styles the crawlable #app fallback (injected by scripts/share-pages.js)
+         during the brief moment before the bundle's CSS loads and the app
+         replaces it. Unused once the app has mounted. -->
+    <style>
+      .pre-render { max-width: 640px; margin: 0 auto; padding: 2rem 1.25rem; color: #a6abcf; }
+      .pre-render h1 { color: #eef0ff; font-size: 1.6rem; letter-spacing: -0.02em; }
+      .pre-render a { color: #a99bff; }
+      .pre-render ul { line-height: 1.8; padding-left: 1.1rem; }
+    </style>
+
     <!-- Apply the saved theme before first paint so there's no flash of the
          default palette. Gating is re-checked in JS (core/theme.js initTheme);
          this only sets the attribute the CSS keys off. -->
@@ -25,7 +44,7 @@
          the SITE_SHARE entry in src/shareManifest.js, repeated here as literal
          text because a crawler reads this file without running any JS. Per-game
          links get their own preview pages from scripts/share-pages.js. -->
-    <title>Wordems</title>
+    <title>Wordems — Free Daily Word &amp; Logic Puzzle Games</title>
     <meta
       name="description"
       content="A small collection of daily puzzle games — a fresh board every day for each. Spot the fake word, mix light into color, and more."

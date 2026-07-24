@@ -420,6 +420,117 @@
   font-style: italic;
 }
 
+/* ---- picker demo ---- */
+
+.aaw-demo-host {
+  width: 100%;
+}
+
+.aaw-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 2px auto 6px;
+  width: 100%;
+}
+
+/* Two across, like the real board — the demo should rehearse the shape of the
+   thing you are about to play, not invent a second layout. */
+.aaw-demo-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.aaw-demo-choice {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.1rem;
+  padding: 10px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--bg-2), #12152a);
+  transition: border-color 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
+}
+
+.aaw-demo-word {
+  /* Same auto-fit lever as .aaw-word, against this tile's own width. --len is
+     set per frame in tutorial.js. */
+  font-size: clamp(0.68rem, calc(150cqi / var(--len, 8)), 1.15rem);
+  font-weight: 700;
+  text-transform: lowercase;
+  line-height: 1.1;
+  color: var(--fg);
+  transition: color 0.25s ease, text-decoration-color 0.25s ease;
+}
+
+/* Revealed: the real word lights green, the fake mutes and strikes — the same
+   bright-real / struck-fake vocabulary the end-of-game review already uses. */
+.aaw-demo-choice.is-real {
+  border-color: var(--good);
+  box-shadow: 0 0 18px -6px var(--good);
+}
+
+.aaw-demo-choice.is-fake {
+  opacity: 0.55;
+}
+
+.aaw-demo-choice.is-fake .aaw-demo-word {
+  color: var(--fg-dim);
+  text-decoration: line-through;
+}
+
+/* The stakes, shown on the reveal rather than described. */
+.aaw-demo-chip {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.aaw-demo.is-revealed .aaw-demo-chip {
+  opacity: 1;
+}
+
+.aaw-demo-choice.is-real .aaw-demo-chip {
+  color: var(--good);
+}
+
+.aaw-demo-choice.is-fake .aaw-demo-chip {
+  color: var(--bad);
+}
+
+.aaw-demo-caption {
+  margin: 0;
+  min-height: 2.4em; /* reserve two lines so the card can't jog between frames */
+  color: var(--fg-dim);
+  font-size: 0.86rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.aaw-demo-caption b {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aaw-demo-choice,
+  .aaw-demo-word,
+  .aaw-demo-chip {
+    transition: none;
+  }
+}
+
 /* ---- end-of-game review list ---- */
 
 .aaw-review {

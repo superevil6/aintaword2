@@ -474,6 +474,20 @@ button {
 .sup-buy:hover {
   filter: brightness(1.08);
 }
+.sup-legal {
+  margin: 0.6rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--fg-dim);
+}
+.sup-legal a {
+  color: var(--fg-dim);
+  text-decoration: underline;
+}
+.sup-legal a:hover {
+  color: var(--fg);
+}
 .sup-soon {
   margin: 0;
   padding: 0.6rem;

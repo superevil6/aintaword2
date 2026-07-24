@@ -1,0 +1,58 @@
+/* Shared styles for the standalone legal pages (public/privacy, public/terms).
+   Self-contained and dark, matching the app palette, but deliberately simple —
+   these are plain documents, not the app. */
+
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #0f1220;
+  color: #eef0ff;
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.legal-wrap { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+.legal-top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-bottom: 2.5rem;
+}
+.legal-brand {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  color: #eef0ff; text-decoration: none;
+  font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em;
+}
+.legal-brand img { width: 1.5rem; height: 1.5rem; }
+.legal-home { color: #a6abcf; text-decoration: none; font-size: 0.9rem; white-space: nowrap; }
+.legal-home:hover { color: #eef0ff; }
+
+h1 { font-size: clamp(1.8rem, 5vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 0.3rem; }
+.legal-updated { color: #a6abcf; font-size: 0.85rem; margin: 0 0 2rem; }
+
+.legal-tldr {
+  background: color-mix(in srgb, #7c5cff 12%, #171a2e);
+  border: 1px solid color-mix(in srgb, #7c5cff 35%, transparent);
+  border-radius: 16px; padding: 1rem 1.25rem; margin: 0 0 2.5rem;
+}
+.legal-tldr p { margin: 0; }
+.legal-tldr strong { color: #cbb8ff; }
+
+h2 { font-size: 1.15rem; font-weight: 700; margin: 2.2rem 0 0.6rem; }
+p, li { color: #dfe2f5; }
+a { color: #a99bff; }
+a:hover { color: #c9bfff; }
+ul { padding-left: 1.2rem; margin: 0.5rem 0; }
+li { margin: 0.3rem 0; }
+code { background: rgba(255,255,255,0.08); padding: 0.1em 0.35em; border-radius: 5px; font-size: 0.9em; }
+
+.legal-foot {
+  margin-top: 3rem; padding-top: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  color: #a6abcf; font-size: 0.9rem;
+  display: flex; gap: 1.25rem; flex-wrap: wrap;
+}
+.legal-foot a { color: #a6abcf; }
+.legal-foot a:hover { color: #eef0ff; }

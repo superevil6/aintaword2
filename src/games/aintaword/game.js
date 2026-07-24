@@ -8,6 +8,7 @@ import { Rng } from "../../core/rng.js";
 import { announceRoundComplete } from "../../core/lifecycle.js";
 import { Countdown } from "../../core/timer.js";
 import { makePair } from "./wordSmith.js";
+import { mountTutorial } from "./tutorial.js";
 import { getDifficulty, DIFFICULTY_ORDER, DIFFICULTIES } from "./difficulty.js";
 import { buildShareText, copyToClipboard } from "./share.js";
 import {
@@ -44,6 +45,7 @@ export class AintAWordGame {
     // Every answered round, in order, for the end-of-game review.
     // { real, fake, type, picked, correct }
     this.history = [];
+    this._tutorialCleanup = null; // stops the picker demo's loop
 
     this.timer = new Countdown({
       durationMs: DURATION_MS,
@@ -60,9 +62,18 @@ export class AintAWordGame {
 
   destroy() {
     this.timer.stop();
+    this._teardownTutorial();
     clearTimeout(this._shareTimer);
     window.removeEventListener("keydown", this._onKey);
     this.root.innerHTML = "";
+  }
+
+  // The picker's demo runs on a timer chain, so it MUST be torn down whenever
+  // the overlay is emptied — otherwise the loop keeps firing against an element
+  // that is no longer in the document.
+  _teardownTutorial() {
+    this._tutorialCleanup?.();
+    this._tutorialCleanup = null;
   }
 
   /**
@@ -388,6 +399,7 @@ export class AintAWordGame {
   // --- overlays -----------------------------------------------------------
 
   _hideOverlay() {
+    this._teardownTutorial();
     clearTimeout(this._shareTimer);
     this._shareBox = null; // cleared along with the overlay's children
     this.overlay.className = "aaw-overlay";
@@ -401,6 +413,7 @@ export class AintAWordGame {
   // Difficulties already played today are shown with their score and lead to
   // that stored result instead of starting a second run.
   _showSelect() {
+    this._teardownTutorial(); // a re-entry must not leave the old loop running
     this.state = "select";
     this._renderClock(DURATION_MS);
     this.scoreEl.textContent = "Score 0";
@@ -413,15 +426,20 @@ export class AintAWordGame {
     this.overlay.innerHTML = "";
 
     const card = el("div", "aaw-card");
+    // The looping demo sits right under the lede, so it is the first thing that
+    // moves — it shows the near-miss fakes far faster than the prose can.
+    const demoHost = el("div", "aaw-demo-host");
     card.append(
       el("h1", "aaw-title", "Ain't a Word"),
       el("p", "aaw-lede", "One word is real. One is a clever fake. Pick the real one."),
+      demoHost,
       bullets([
         "60 seconds — the clock never stops.",
         `Correct: +1 point. Wrong: −${PENALTY_MS / 1000} seconds.`,
         "One run per difficulty, each day.",
       ]),
     );
+    this._tutorialCleanup = mountTutorial(demoHost);
 
     const list = el("div", "aaw-picker");
     let firstBtn = null;
@@ -476,6 +494,7 @@ export class AintAWordGame {
   }
 
   _showGameOver(score, best, isRecord, { replay = false } = {}) {
+    this._teardownTutorial(); // reachable straight from the picker via a replay
     this.board.style.visibility = "hidden";
     this.overlay.style.display = "flex";
     this.overlay.className = "aaw-overlay aaw-overlay-over";

@@ -26,13 +26,17 @@ export function todaysResults(day = todayKey()) {
   return dayResults(GAME, day);
 }
 
-/** @returns {{score:number, par:number, rounds:number, playedAt:string}|null} */
+/** @returns {{score:number, par:number, rounds:number, lengths:number[], playedAt:string}|null} */
 export function getResult(difficulty, day = todayKey()) {
   return histGet(GAME, difficulty, day);
 }
 
-export function saveResult(difficulty, { score, par, rounds }, day = todayKey()) {
-  putResult(GAME, difficulty, { score, par, rounds, playedAt: new Date().toISOString() }, day);
+/**
+ * `lengths` is the word length banked per round (0 = busted), kept so revisiting
+ * a finished day can redraw the same receipt instead of restarting the run.
+ */
+export function saveResult(difficulty, { score, par, rounds, lengths }, day = todayKey()) {
+  putResult(GAME, difficulty, { score, par, rounds, lengths, playedAt: new Date().toISOString() }, day);
 }
 
 /** Every date this game has been completed on — for the archive's played marks. */

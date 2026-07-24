@@ -91,6 +91,12 @@ export const GAME_SHARE = {
       "Walls of letters scroll past a firing beam. Grab one letter per row to build a " +
       "word, and cash it before a row kills it. Push your luck across five rounds.",
   },
+  sigilsweep: {
+    title: "Sigil Sweep",
+    description:
+      "A split line rotates through a hidden mark, showing one true sliver and its " +
+      "mirror image. Assemble it from memory and pick it out — the sooner the better.",
+  },
 };
 
 /** Share copy for a game id, or the site copy when the id is unknown/absent. */

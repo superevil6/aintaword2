@@ -85,10 +85,15 @@ export function mountHub(container, { day = null, onExitArchive, onOpenArchive }
       // Archive controls share the subtree; handle them before game picks.
       if (e.target.closest("[data-archive-today]")) { onExitArchive?.(); return; }
       if (e.target.closest("[data-archive-open]")) { onOpenArchive?.(); return; }
-      const btn = e.target.closest("[data-id]");
-      if (!btn) return;
-      const game = games.find((g) => g.id === btn.dataset.id);
+      const card = e.target.closest("a.hub-card");
+      if (!card) return;
+      // Tiles are real links to /g/<id>/ (crawlable, open-in-new-tab, a11y), but
+      // a plain click plays in-place via the SPA. Let modified clicks and
+      // middle-clicks fall through to the browser so "open in new tab" still works.
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const game = games.find((g) => g.id === card.dataset.id);
       if (!game) return;
+      e.preventDefault();
       container.innerHTML = "";
       resolve(game);
     });
@@ -215,8 +220,9 @@ function cardHtml(g, mark = "none", streak = 0) {
     : "";
   return `
     <li>
-      <button
+      <a
         class="hub-card${played ? " is-done" : ""}"
+        href="/g/${escapeAttr(g.id)}/"
         data-id="${escapeAttr(g.id)}"
         style="--card-accent: ${escapeAttr(g.accent || "var(--accent)")}"
       >
@@ -225,7 +231,7 @@ function cardHtml(g, mark = "none", streak = 0) {
         ${streakBadge}
         <span class="hub-card-title">${escapeHtml(g.title)}${doneNote}</span>
         <span class="hub-card-tagline">${escapeHtml(g.tagline || "")}</span>
-      </button>
+      </a>
     </li>
   `;
 }
@@ -250,6 +256,11 @@ function footerHtml() {
         <span class="hub-stat-label">Anonymous play stats</span>
       </label>
       <p class="hub-foot-note">${note}</p>
+      <nav class="hub-foot-links" aria-label="Site information">
+        <a href="/privacy/">Privacy</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terms/">Terms</a>
+      </nav>
     </footer>
   `;
 }

@@ -3,8 +3,8 @@
 // Three tiers, each 120 seeds. Two difficulty axes are in play:
 //   • board SIZE — 4×4 (Easy) vs 5×5 (Medium/Hard). Squares get sparser and
 //     naive fills strand far more often as n grows.
-//   • the erasable center HINT — Medium hands you two axis letters; Hard gives
-//     none, which alone drops you back into the ~99.8%-strand regime.
+//   • the erasable center HINT — Easy hands you one axis letter and Medium two;
+//     Hard gives none, which alone drops you back into the ~99.8%-strand regime.
 // So Easy and Hard sit a size apart, while Medium→Hard is the SAME 5×5 board
 // stripped of its hint AND drawn from a steeper seed bar (spread ≥12 vs ≥7, so
 // par demands the rare-letter square). 6×6 was dropped as a tier: only ~57
@@ -30,11 +30,15 @@ export const DIFFICULTIES = {
     label: "Easy",
     size: 4,
     // How many center-diagonal cells are pre-filled as an erasable hint (drawn
-    // from the day's optimal square, so keeping them never blocks par). Easy is
-    // already gentle and Hard is meant to bite, so both get none; only Medium
-    // gets a foothold on the mirror axis. See design notes on the 99.8% strand.
-    hint: 0,
-    blurb: "A 4×4 square — a gentle first reflection",
+    // from the day's optimal square, so keeping them never blocks par). Easy
+    // gets one and Medium two — the tier that is meant to teach should not be
+    // the one that starts from a blank axis. Hard alone gets none, which is
+    // what makes it bite. See design notes on the 99.8% strand.
+    //
+    // One, not two: on a 4×4 there are only three free diagonal cells, so two
+    // hints would be most of the spine and par would fall out nearly by itself.
+    hint: 1,
+    blurb: "A 4×4 square — a center letter to start you off",
     seeds: ["abet", "able", "aces", "ache", "acne", "babe", "baby", "bade", "bags", "bake", "cabs", "cage", "calf", "calk", "calm", "dabs", "dads", "dais", "dame", "dams", "each", "earl", "ease", "east", "eats", "face", "fact", "fads", "fake", "fame", "gabs", "gags", "gala", "gale", "gals", "hack", "hags", "half", "hall", "halt", "iced", "ices", "idea", "idle", "ills", "jabs", "jack", "jamb", "jams", "jaws", "keel", "keep", "kept", "kick", "kill", "labs", "lace", "lacy", "lade", "lady", "mace", "made", "maid", "maim", "male", "nabs", "nags", "nape", "naps", "neat", "oafs", "oaks", "oath", "oboe", "odes", "pace", "pack", "pads", "page", "pale", "race", "rack", "raft", "rage", "raid", "sack", "sacs", "saga", "sage", "said", "tabs", "tack", "tact", "tags", "talc", "undo", "unto", "urge", "urns", "user", "vane", "vans", "vase", "vast", "veal", "wade", "wads", "wage", "wags", "wake", "yaks", "yams", "yaps", "yard", "yens", "zany", "zeal", "zest", "zeta", "zips"],
   },
   medium: {

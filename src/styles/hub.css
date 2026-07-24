@@ -144,6 +144,7 @@
   border: 1.5px solid color-mix(in srgb, var(--card-accent) 30%, transparent);
   border-radius: var(--radius);
   color: var(--fg);
+  text-decoration: none;
   cursor: pointer;
 
   transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
@@ -363,4 +364,20 @@
   font-size: 0.78rem;
   line-height: 1.4;
   color: var(--fg-dim);
+}
+
+.hub-foot-links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--fg-dim);
+}
+.hub-foot-links a {
+  color: var(--fg-dim);
+  text-decoration: none;
+}
+.hub-foot-links a:hover {
+  color: var(--fg);
+  text-decoration: underline;
 }

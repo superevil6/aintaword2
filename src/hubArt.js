@@ -43,6 +43,17 @@ const ART = {
       <circle cx="70" cy="66" r="2.4" fill="currentColor" stroke="none"/>
     </svg>`,
 
+  // Colordrop: a ball poised to fall through a little tree of wall-slots onto
+  // the goal bar. The drop + gates + goal, not another colour ball (that reads
+  // as colorpath) — one colour, tinted by the tile accent.
+  colordrop: `
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"
+         stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="50" cy="18" r="8" fill="currentColor" stroke="none"/>
+      <path d="M50 34 V54 M30 58 V78 M70 58 V78"/>
+      <path d="M15 88 H85" stroke-width="5"/>
+    </svg>`,
+
   // A beam entering level, bouncing 90° off a mirror, landing on the finish.
   photonfinish: `
     <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round"
@@ -102,6 +113,35 @@ const ART = {
       <rect x="28" y="60" width="42" height="16" rx="2"/>
       <rect x="34" y="42" width="36" height="16" rx="2"/>
       <rect x="30" y="24" width="30" height="16" rx="2"/>
+    </svg>`,
+
+  // Scrolling rows of letter tiles crossing a firing beam — one captured in it,
+  // a launcher firing up from below.
+  lettershooter: `
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"
+         stroke-linejoin="round">
+      <rect x="12" y="19" width="16" height="14" rx="2"/>
+      <rect x="42" y="19" width="16" height="14" rx="2"/>
+      <rect x="72" y="19" width="16" height="14" rx="2"/>
+      <rect x="12" y="43" width="16" height="14" rx="2"/>
+      <rect x="42" y="43" width="16" height="14" rx="2"/>
+      <rect x="72" y="43" width="16" height="14" rx="2"/>
+      <rect x="12" y="67" width="16" height="14" rx="2"/>
+      <rect x="72" y="67" width="16" height="14" rx="2"/>
+      <rect x="42" y="67" width="16" height="14" rx="2" fill="currentColor" stroke="none"/>
+      <path d="M40 13 V87 M60 13 V87" stroke-width="2.5" opacity="0.8"/>
+      <path d="M44 96 L50 89 L56 96" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>`,
+
+  // Sigil Sweep: an abstract mark behind a rotating split line, the near half
+  // solid and the far half faint — the reveal-and-reflect idea in one frame.
+  sigilsweep: `
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"
+         stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="50" cy="50" r="34" opacity="0.4"/>
+      <path d="M50 30 V70 M50 34 L66 44 M50 56 H64"/>
+      <path d="M50 30 L36 40 M50 70 L38 60" opacity="0.32"/>
+      <path d="M50 12 V88" stroke-width="2.5" opacity="0.85"/>
     </svg>`,
 };
 

@@ -91,7 +91,40 @@ ok(
   "none marked as played on a fresh day",
 );
 
+// --- picker demo is rules-accurate --------------------------------------
+// The demo must never show a pair the real generator could not produce. A fake
+// that is secretly a real word ("calender" for "calendar") would teach the
+// wrong answer, so every frame is re-derived from the live dictionary here.
+console.log("\npicker demo:");
+const { FRAMES: DEMO_FRAMES } = await import("../src/games/aintaword/tutorial.js");
+const { fakeCandidates } = await import("../src/games/aintaword/wordSmith.js");
+
+ok(document.querySelector(".aaw-demo"), "picker mounts the how-to demo");
+ok(DEMO_FRAMES.length >= 3, `demo has ${DEMO_FRAMES.length} frames`);
+
+for (const f of DEMO_FRAMES) {
+  ok(dict.isWord(f.real), `demo real word "${f.real}" is a real word`);
+  ok(!dict.isWord(f.fake), `demo fake "${f.fake}" is NOT a real word`);
+  const hit = fakeCandidates(f.real, dict).find((c) => c.word === f.fake);
+  ok(hit, `demo fake "${f.fake}" is one the generator actually produces`);
+  ok(hit?.type === f.type, `"${f.fake}" is a ${f.type} (declared type matches)`);
+}
+
+// One frame per transformation type, so the demo shows the full trick bag
+// rather than three variations of the same edit.
+ok(
+  new Set(DEMO_FRAMES.map((f) => f.type)).size === DEMO_FRAMES.length,
+  "every demo frame uses a different fake type",
+);
+// If the real word were always on one side, the demo would teach a tell that
+// the actual game does not have.
+ok(
+  new Set(DEMO_FRAMES.map((f) => f.realLeft)).size === 2,
+  "the real word is not always on the same side",
+);
+
 game.start();
+ok(!document.querySelector(".aaw-demo"), "starting a run tears the demo down");
 console.log("\nafter start:");
 ok(game.state === "playing", "state is playing");
 ok(game.timer.running, "clock is running");

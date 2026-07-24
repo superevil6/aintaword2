@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<!--
+  Privacy Policy — a plain-language document describing what the site actually
+  does (see src/core/stats.js, src/core/history.js, src/core/sync.js,
+  functions/api/*). It is a STARTING TEMPLATE, not legal advice — review before
+  relying on it. Things to confirm / fill:
+    • contact address (support@wordems.com) — make sure that inbox exists
+    • effective date (below)
+    • the legal name/entity behind Wordems, if you want one named
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f1220" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <title>Privacy Policy · Wordems</title>
+    <meta name="description" content="How Wordems handles data: no accounts, no ads, no tracking cookies — anonymous counts only, and most data stays in your browser." />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <div class="legal-wrap">
+      <div class="legal-top">
+        <a class="legal-brand" href="/"><img src="/favicon.svg" alt="" />Wordems</a>
+        <a class="legal-home" href="/">← Back to the games</a>
+      </div>
+
+      <h1>Privacy Policy</h1>
+      <p class="legal-updated">Effective 23 July 2026</p>
+
+      <div class="legal-tldr">
+        <p><strong>The short version:</strong> No accounts. No ads. No tracking
+        cookies. We keep an <em>anonymous</em> count of how often each game is
+        played and finished — no names, no profiles, nothing tied to you.
+        Almost everything else (your scores, streaks, and settings) stays in
+        your own browser and is never sent anywhere.</p>
+      </div>
+
+      <p>Wordems is a small collection of daily browser puzzle games at
+      <a href="https://wordems.com">wordems.com</a>. This page explains what
+      information the site does and doesn't handle, in plain language.</p>
+
+      <h2>What stays on your device</h2>
+      <p>Your play data lives in your browser's local storage, on your device.
+      We don't receive it (unless you turn on supporter sync — see below). This
+      includes:</p>
+      <ul>
+        <li>Which puzzles you've completed, your scores, and your streaks;</li>
+        <li>Your chosen colour theme and other preferences;</li>
+        <li>Supporter status and, if you have one, your license key;</li>
+        <li>A small flag used to avoid double-counting you in the anonymous
+            stats below.</li>
+      </ul>
+      <p>Clearing your browser's site data for wordems.com removes all of it.</p>
+
+      <h2>Anonymous usage stats</h2>
+      <p>To see which games people enjoy and which need work, the site keeps a
+      simple daily tally per game: how many devices <em>opened</em> it,
+      <em>finished</em> a round, and finished <em>all difficulties</em>. When one
+      of those happens, your browser sends a single message containing only the
+      date, the game, and the event — for example
+      <code>{ "day": "2026-07-23", "game": "rootword", "event": "finish" }</code>.</p>
+      <ul>
+        <li><strong>No identifier of any kind</strong> is sent — no name, no
+            account, no cookie, and we don't store your IP address.</li>
+        <li>It's de-duplicated on your device, so each game/event is counted at
+            most once per day. That means we're counting <em>devices</em>, never
+            people, and we can't link one day to another.</li>
+        <li>It covers today's live puzzles only — replaying an old puzzle from
+            the archive doesn't count.</li>
+        <li>It's <strong>off automatically</strong> if your browser sends a
+            "Do Not Track" or Global Privacy Control signal, and you can turn it
+            off yourself with the <em>Anonymous play stats</em> switch at the
+            bottom of the home screen.</li>
+      </ul>
+
+      <h2>If you become a supporter</h2>
+      <p>Supporting Wordems is optional and unlocks a few extras (colour themes,
+      the puzzle archive, and cross-device sync). Payment is handled entirely by
+      our reseller, <a href="https://www.lemonsqueezy.com/privacy" target="_blank" rel="noopener">Lemon
+      Squeezy</a>, who act as the merchant of record. They collect your payment
+      details and email to process the purchase — <strong>we never see your card
+      details.</strong> After a purchase we store your license key and the email
+      Lemon Squeezy passes to us, solely to unlock your perks and, if you enable
+      it, to sync your progress.</p>
+
+      <h2>Cross-device sync (supporters only)</h2>
+      <p>If you turn on sync, your puzzle history — dates, scores, and which
+      difficulty, but none of your personal information — is stored on our server
+      (Cloudflare D1), keyed by your license key. Its only purpose is to restore
+      your progress when you play on another device. Turn off sync or contact us
+      to have it deleted.</p>
+
+      <h2>Cookies</h2>
+      <p>We use no advertising or tracking cookies. The site uses your browser's
+      local storage for the things described above, which is not shared across
+      sites. Lemon Squeezy's checkout, on their own domain, may use their own
+      cookies as described in their policy.</p>
+
+      <h2>Who else is involved</h2>
+      <ul>
+        <li><strong>Cloudflare</strong> — hosts the site and its small backend.</li>
+        <li><strong>Lemon Squeezy</strong> — processes supporter payments.</li>
+      </ul>
+      <p>There are no advertising networks, no Google Analytics, and no social
+      media trackers.</p>
+
+      <h2>Your choices</h2>
+      <ul>
+        <li>Turn the anonymous stats off with the switch on the home screen, or
+            via your browser's Do Not Track / Global Privacy Control setting.</li>
+        <li>Clear all locally stored data any time through your browser
+            settings.</li>
+        <li>Ask us to delete supporter data tied to your license key — see
+            Contact.</li>
+      </ul>
+
+      <h2>Children</h2>
+      <p>Wordems is a general-audience site and isn't directed at children under
+      13, and we don't knowingly collect information from them.</p>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, we'll update this page and the effective date
+      above.</p>
+
+      <h2>Contact</h2>
+      <p>Questions or requests: <a href="mailto:support@wordems.com">support@wordems.com</a>.</p>
+
+      <div class="legal-foot">
+        <a href="/">Home</a>
+        <a href="/terms/">Terms of Use</a>
+      </div>
+    </div>
+  </body>
+</html>

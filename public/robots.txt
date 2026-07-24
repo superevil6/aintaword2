@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+# The backend API is not content — keep crawlers out of it.
+Disallow: /api/
+
+Sitemap: https://wordems.com/sitemap.xml

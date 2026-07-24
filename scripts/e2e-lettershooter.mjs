@@ -101,8 +101,27 @@ for (const id of DIFFICULTY_ORDER) {
   game.destroy();
 }
 
+// ── revisiting a finished tier shows the stored result, not a fresh run ──────
+{
+  localStorage.clear();
+  const id = "easy";
+  const first = new LetterShooterGame(app, { dict, daily, day, difficulty: id });
+  playPar(first, daily.sets[id]);
+  first.destroy();
+
+  const again = new LetterShooterGame(app, { dict, daily, day, difficulty: id });
+  ok(app.querySelector(".ls-total-big"), "revisiting a finished tier shows the result screen");
+  ok(!app.querySelector("#ls-stage"), "revisiting does NOT start a new run");
+  ok(app.querySelector(".ls-played"), "revisiting says the day is already played");
+  ok(/on par/.test(app.querySelector(".ls-total-big").textContent), "the revisited result is the one that was banked");
+  ok(app.querySelectorAll(".ls-rc-row").length === 5, "the stored per-round receipt is redrawn");
+  again.destroy();
+  localStorage.clear();
+}
+
 // ── 3. busting every round finishes below par ────────────────────────────────
 {
+  localStorage.clear(); // a finished tier would short-circuit to its result
   const id = "medium";
   const game = new LetterShooterGame(app, { dict, daily, day, difficulty: id });
   const set = daily.sets[id];
@@ -115,6 +134,7 @@ for (const id of DIFFICULTY_ORDER) {
 
 // ── a single grab of a dead-end letter busts (forfeits the word) ─────────────
 {
+  localStorage.clear(); // a finished tier would short-circuit to its result
   const game = new LetterShooterGame(app, { dict, daily, day, difficulty: "easy" });
   const startWord = game.word;
   bustCurrent(game);

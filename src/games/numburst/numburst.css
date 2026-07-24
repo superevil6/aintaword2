@@ -488,6 +488,34 @@
 .nb-btn:hover,
 .nb-btn:focus-visible { border-color: var(--nb-accent); }
 
+/* The results scrim. Fills the field and dims the finished board behind the
+ * panel, so the layout never grows past the board's own height — and so a
+ * stray tap on a dead orb can't reach the field's click handler. */
+.nb-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--bg, #0d1420) 72%, transparent);
+  backdrop-filter: blur(3px);
+  animation: nb-overlay-in 220ms ease both;
+}
+
+@keyframes nb-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-overlay { animation: none; }
+}
+
 .nb-done {
   display: flex;
   flex-direction: column;
@@ -496,8 +524,15 @@
   padding: 1rem 1.5rem;
   border: 1px solid var(--nb-accent);
   border-radius: var(--radius);
-  background: #ffffff0d;
+  /* Opaque, not the old translucent wash: it now sits on top of the board and
+   * needs to separate from the orbs showing through the scrim. */
+  background: color-mix(in srgb, var(--bg, #0d1420) 88%, #fff 6%);
   text-align: center;
+  /* Long panels (share fallback textarea) scroll inside the board rather than
+   * spilling out of it. */
+  max-width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .nb-done-round {
@@ -525,20 +560,25 @@
   color: var(--good);
 }
 
-/* A cleared board is rarer than beating par, so it gets the loudest signal on
- * the panel: an accent-gold border and a headline badge above the score. */
+/* A cleared board is rarer than beating par, so it gets the loudest signal
+ * available: a green border on the panel and a banner over the top of it. */
 .nb-done.is-perfect {
-  border-color: var(--nb-accent);
-  box-shadow: 0 0 0 1px var(--nb-accent), 0 0 24px -6px var(--nb-accent);
+  border-color: var(--good);
+  box-shadow: 0 0 24px -6px var(--good);
 }
 
+/* The clean-board banner. Sits ABOVE the panel inside the overlay, sized off
+ * the viewport so it stays the biggest thing on screen on a phone and does not
+ * outgrow the board on a desktop. */
 .nb-perfect {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: clamp(1.6rem, 9vw, 3rem);
   font-weight: 800;
-  letter-spacing: 0.14em;
+  line-height: 1;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--nb-accent);
+  color: var(--good);
+  text-shadow: 0 0 28px color-mix(in srgb, var(--good) 55%, transparent);
   animation: nb-perfect-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 

@@ -718,7 +718,6 @@ export class NumburstGame {
       panel.className = `nb-done${cleared ? " is-perfect" : ""}`;
       panel.innerHTML = `
         <p class="nb-done-round">Round ${this.round + 1} of ${ROUNDS}</p>
-        ${cleared ? `<p class="nb-perfect">Perfect &mdash; board cleared</p>` : ""}
         <p class="nb-done-score">+${roundScore}</p>
         <p class="nb-done-note">${this.score} so far.</p>
       `;
@@ -731,12 +730,43 @@ export class NumburstGame {
         this._build();
       });
       panel.appendChild(next);
-      this.root.appendChild(panel);
+      this._showPanel(panel, cleared ? "Perfect" : null);
       next.focus();
       return;
     }
 
     this._finish();
+  }
+
+  /**
+   * Float a results panel over the board rather than below it.
+   *
+   * The round is over, so the pile underneath is no longer something you can
+   * act on — stacking the panel under it only pushed the buttons off the bottom
+   * of a phone. Overlaying keeps the whole screen fixed at the board's own
+   * height, and the scrim doubles as a click shield: orb clicks can't reach the
+   * field handler through it.
+   *
+   * `perfectText`, when given, is the clean-board banner. It rides ABOVE the
+   * panel rather than inside it — the panel is the scoreboard, and a perfect is
+   * a bigger, louder thing than any line of it.
+   */
+  _showPanel(panel, perfectText = null) {
+    const overlay = document.createElement("div");
+    overlay.className = "nb-overlay";
+    if (perfectText) {
+      const banner = document.createElement("p");
+      banner.className = "nb-perfect";
+      banner.textContent = perfectText;
+      overlay.appendChild(banner);
+    }
+    overlay.appendChild(panel);
+    this._fieldEl.appendChild(overlay);
+    // The scrim only shields the field; the tray sits outside it and would
+    // still take clicks. Nothing is left to arm, so close it too. No matching
+    // re-enable needed — _build() rebuilds the tray from scratch each round.
+    for (const btn of this._trayEl.querySelectorAll("[data-bomb]")) btn.disabled = true;
+    return overlay;
   }
 
   _finish() {
@@ -762,7 +792,7 @@ export class NumburstGame {
         : `Par ${this.par} — ${this.par - this.score} short.`;
 
     // A perfect match is every board of the day burst to nothing — a scarcer,
-    // louder thing than beating par, so it leads the panel when it happens.
+    // louder thing than beating par, so it banners above the panel entirely.
     const perfect = this._roundClears.length === ROUNDS
       && this._roundClears.every(Boolean);
 
@@ -770,7 +800,6 @@ export class NumburstGame {
     panel.className = `nb-done${perfect ? " is-perfect" : beat ? " is-win" : ""}`;
     panel.innerHTML = `
       <p class="nb-done-round">${ROUNDS} rounds complete</p>
-      ${perfect ? `<p class="nb-perfect">Perfect &mdash; every board cleared</p>` : ""}
       <p class="nb-done-score">${this.score}</p>
       <p class="nb-done-note">${parLine}</p>
     `;
@@ -796,7 +825,7 @@ export class NumburstGame {
 
     actions.append(share, again);
     panel.appendChild(actions);
-    this.root.appendChild(panel);
+    this._showPanel(panel, perfect ? "Perfect" : null);
     share.focus();
     announceRoundComplete(this.root);
   }
