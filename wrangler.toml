@@ -11,19 +11,10 @@ compatibility_date = "2026-07-22"
 pages_build_output_dir = "dist"
 
 # Non-secret vars — managed HERE, not the dashboard (Pages shows a banner saying
-# so; the dashboard only handles encrypted Secrets). LS_VARIANT_ID restricts
-# license unlocking to the Supporter variant. SYNC_ENABLED is deliberately absent
-# so sync stays 403 in production; local dev turns it on via .dev.vars.
+# so; the dashboard only handles encrypted Secrets).
 [vars]
-LS_VARIANT_ID = "1940929"
 # Cross-device sync on in production (the sync client and /api/sync read this).
 SYNC_ENABLED = "true"
-# TEMPORARY — accept Lemon Squeezy TEST-mode keys. Correct while the store is in
-# test mode (every key is a test key). ⚠ GO-LIVE: the LAST step, only after LS
-# activates the store AND you flip it to Live mode — delete this line and push,
-# so production rejects leftover test keys. Local dev keeps accepting them via
-# .dev.vars, independent of this.
-ALLOW_TEST_KEYS = "true"
 
 # D1 (SQLite). One-time setup — create the DB, paste its id here, migrate:
 #   npx wrangler d1 create wordems                       # prints database_id

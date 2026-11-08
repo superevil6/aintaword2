@@ -3,10 +3,9 @@
 Same-origin API for the Wordems site. It lives in `functions/` and deploys with
 the site — no separate Worker, no CORS. D1 (SQLite) is the store.
 
-Status: **infrastructure only.** The endpoints work, but nothing in the app
-calls them yet, and the sync endpoint is **unauthenticated** until Lemon Squeezy
-license validation is wired (that's the identity). Build/verify this now; connect
-the client when LS test-mode keys exist.
+Sync identity is an anonymous, client-generated sync code
+(`src/core/syncCode.js`, migration `0003_device_code.sql`). There is no paid
+tier and no license validation — the Lemon Squeezy integration was removed.
 
 ## Files
 
@@ -130,15 +129,3 @@ Against production, swap the host for `https://wordems.com`.
   → Settings → Environment variables → `SYNC_ENABLED` = `true`.
 
 `/api/health` is not gated — it only reads a count, and it's useful for liveness.
-
-## Remaining (deferred — needs Lemon Squeezy)
-
-1. **`functions/api/webhook/lemonsqueezy.js`** — signature-verified; writes a
-   `users` row on purchase.
-2. **`functions/api/license/validate.js`** — validates a key against the LS API
-   (test mode first), so `/api/sync` can require a real key instead of trusting
-   the caller.
-3. **Client** — a license-key entry UI that, on a valid key, calls
-   `grant(SKU.SUPPORTER)` and drives sync from `src/core/history.js`.
-
-See `docs/entitlements.md` and the publish-backend plan.

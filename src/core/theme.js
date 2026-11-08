@@ -1,18 +1,13 @@
-// Theme system — a supporter perk that swaps the shell's palette.
+// Theme system — swaps the shell's palette. Every theme is free.
 //
 // A theme is nothing more than a set of CSS custom-property overrides applied
 // via a `data-theme` attribute on :root (the palettes live in styles/global.css).
-// The default palette is free; the rest unlock with a supporter entitlement.
-// Themes are cosmetic/goodwill (see the monetization plan), so the lock is a UX
-// signal, not DRM — a determined user flipping localStorage just gets a colour.
-
-import { isSupporter } from "./entitlements.js";
 
 const KEY = "aintaword2:theme";
 
 /**
- * Selectable themes. `swatch` is the dot shown in the picker; `free` themes need
- * no entitlement. Order is display order. Adding one is a THEMES entry plus a
+ * Selectable themes. `swatch` is the dot shown in the picker; `free` is a
+ * leftover flag (all themes are selectable now). Order is display order. Adding one is a THEMES entry plus a
  * `:root[data-theme="<id>"]` block in global.css — nothing else.
  */
 export const THEMES = [
@@ -38,9 +33,14 @@ export function getThemeId() {
   }
 }
 
-/** A theme is available if it's free or the player holds a supporter entitlement. */
-export function isUnlocked(theme) {
-  return theme.free || isSupporter();
+/**
+ * Whether a theme can be selected. Every theme is now free — the site dropped
+ * paid perks for a plain tip jar — so this is always true. Kept as a function
+ * (rather than deleted) because the theme picker still calls it per swatch, and
+ * keeping the seam means re-introducing a gate later is a one-line change here.
+ */
+export function isUnlocked(/* theme */) {
+  return true;
 }
 
 function themeById(id) {

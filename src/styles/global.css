@@ -352,8 +352,8 @@ button {
   }
 }
 
-/* Supporter badge — visible only when a supporter entitlement is held. Pinned
-   to the right of the bar, quiet enough not to compete with the game title. */
+/* Support (tip jar) button — pinned to the right of the bar, quiet enough not
+   to compete with the game title. */
 .app-supporter {
   flex-shrink: 0;
   font-size: 0.7rem;
@@ -369,9 +369,8 @@ button {
   display: none;
 }
 
-/* The supporter slot is now a button, always shown: quiet "♥ Support" until the
-   entitlement is held, accent "★ Supporter" once it is. (These rules come after
-   the base .app-supporter block above, so they win.) */
+/* Button styling for the Support slot. (These rules come after the base
+   .app-supporter block above, so they win.) */
 .app-supporter {
   background: none;
   cursor: pointer;
@@ -381,10 +380,6 @@ button {
 .app-supporter:hover {
   color: var(--fg);
   border-color: color-mix(in srgb, var(--fg-dim) 55%, transparent);
-}
-.app-supporter.is-supporter {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .app-supporter:focus-visible {
   outline: 2px solid var(--accent);
@@ -568,8 +563,7 @@ button {
   color: var(--fg-dim);
 }
 
-/* Archive button — appears in the bar only while in a game and holding a
-   supporter entitlement (main.js toggles [hidden]). Opens the calendar. */
+/* Archive button — free for everyone. Opens the calendar. */
 .app-archive {
   flex-shrink: 0;
   display: inline-flex;
@@ -602,6 +596,131 @@ button {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* ── Sync button (app bar) ─────────────────────────────────────────────── */
+
+.app-sync {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.app-sync:hover {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.app-sync:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Sync dialog (reuses .supporter-overlay / .supporter-modal / .sup-*) ── */
+
+.sync-enable {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 0.7rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.sync-enable:hover {
+  filter: brightness(1.08);
+}
+.sync-code {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.7rem;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+}
+.sync-code-text {
+  flex: 1;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
+  word-break: break-all;
+  color: var(--fg);
+}
+.sync-copy {
+  flex-shrink: 0;
+  padding: 0.35rem 0.7rem;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sync-copy:hover {
+  border-color: var(--accent);
+}
+.sync-link-label {
+  display: block;
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+}
+.sync-link {
+  display: flex;
+  gap: 0.5rem;
+}
+.sync-link .sup-input {
+  flex: 1;
+  min-width: 0;
+}
+.sync-link-btn {
+  flex-shrink: 0;
+  padding: 0 0.9rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.sync-link-btn:hover {
+  filter: brightness(1.08);
+}
+.sync-msg {
+  margin: 0.5rem 0 0;
+  min-height: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+}
+.sync-unlink {
+  display: block;
+  width: 100%;
+  margin-top: 0.9rem;
+  padding: 0.5rem;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  color: var(--fg-dim);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.sync-unlink:hover {
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.24);
 }
 
 /* ── Archive calendar overlay ──────────────────────────────────────────── */

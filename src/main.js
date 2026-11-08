@@ -15,14 +15,14 @@ import { SITE_NAME, GAME_PARAM, DAY_PARAM, ARCHIVE_START } from "./config.js";
 import { mountHub } from "./hub.js";
 import { getGame, allGames, relatedGames } from "./core/registry.js";
 import { ROUND_COMPLETE } from "./core/lifecycle.js";
-import { isSupporter, onChange, installDevBackdoor } from "./core/entitlements.js";
 import { initTheme } from "./core/theme.js";
 import { mountThemeControl } from "./themeControl.js";
 import { openSupporter } from "./supporterModal.js";
 import { openArchive, formatDay } from "./core/archive.js";
 import { todayKey } from "./core/daily.js";
 import { playedDates } from "./core/history.js";
-import { startSync, stopSync } from "./core/sync.js";
+import { startSync } from "./core/sync.js";
+import { openSync } from "./syncModal.js";
 import { recordOpen, recordFinish } from "./core/stats.js";
 import "./games/aintaword/index.js";  // side effect: registers the game
 import "./games/colorpath/index.js"; // side effect: registers the game
@@ -51,6 +51,9 @@ bar.innerHTML = `
     <span aria-hidden="true">📅</span>
     <span class="app-archive-label">Archive</span>
   </button>
+  <button class="app-sync" type="button" aria-label="Sync across devices" title="Sync across devices">
+    <span aria-hidden="true">⇆</span>
+  </button>
   <button class="app-supporter" type="button"></button>
 `;
 
@@ -66,50 +69,31 @@ const currentEl = bar.querySelector(".app-current");
 const supporterEl = bar.querySelector(".app-supporter");
 const archiveBtn = bar.querySelector(".app-archive");
 const archiveLabelEl = bar.querySelector(".app-archive-label");
+const syncBtn = bar.querySelector(".app-sync");
 bar.querySelector(".app-brand-name").textContent = SITE_NAME;
 
 // Theme control lives at the head of the right-hand cluster (before archive and
 // the supporter badge). Its expanded palette grows leftward into the gap the
 // title's margin-right:auto opens up, so it never covers the other controls.
-const themeControl = mountThemeControl(bar, archiveBtn);
+mountThemeControl(bar, archiveBtn);
 
-// ── Supporter state ─────────────────────────────────────────────────────────
-//
-// The badge is the one visible signal that an entitlement is held. It reflects
-// the entitlements module and updates live, so flipping the dev backdoor (or, at
-// publish, activating a real license key) is observable without a reload.
-// In dev the backdoor exposes ?supporter=1 and wg.setSupporter() for testing.
-if (import.meta.env.DEV) installDevBackdoor();
-
-// Re-assert the theme now that entitlements are known (the inline head script
-// applied it flash-free but couldn't check the supporter gate).
+// Apply the saved theme (every theme is free; the inline head script already
+// applied it flash-free, this just re-asserts it through theme.js).
 initTheme();
 
-// The supporter slot is both signal and entry point: it reads "★ Supporter"
-// when held, "♥ Support" otherwise, and always opens the supporter dialog.
-function syncSupporter() {
-  const sup = isSupporter();
-  supporterEl.classList.toggle("is-supporter", sup);
-  supporterEl.textContent = sup ? "★ Supporter" : "♥ Support";
-  supporterEl.setAttribute("aria-label", sup ? "You're a supporter — manage" : "Become a supporter");
-}
+// The Support button opens the tip-jar dialog. There is nothing to buy and no
+// supporter status to reflect, so it always reads the same.
+supporterEl.textContent = "♥ Support";
+supporterEl.setAttribute("aria-label", "Support Wordems");
 supporterEl.addEventListener("click", openSupporter);
 
-// Re-evaluate the supporter slot, archive button, and theme whenever
-// entitlements change, so the perks light up (or go dark) live.
-onChange(() => {
-  syncSupporter();
-  syncArchiveButton();
-  initTheme();
-  // Supporter themes may have just unlocked (or locked) — re-render the swatches.
-  themeControl.refresh();
-  // Cross-device history sync follows supporter status. startSync() is a no-op
-  // without a stored license key, so unlocking with a key kicks the first pull.
-  if (isSupporter()) startSync();
-  else stopSync();
-});
-syncSupporter();
-if (isSupporter()) startSync();
+// The sync button opens the device-sync dialog (turn on, show/copy code, link
+// another device). Sync is free for everyone.
+syncBtn.addEventListener("click", openSync);
+
+// Begin syncing if this device has already opted in (holds a sync code). No-op
+// otherwise, so a player who never enabled sync never touches the network.
+startSync();
 
 let cleanup = null;
 
@@ -174,17 +158,15 @@ function setChrome(gameTitle) {
 }
 
 /**
- * Reflect archive availability and state in the bar button. Shown only while in
- * a game and holding a supporter entitlement; when a past day is being viewed it
- * flips to an active chip naming that day. Reads the URL — the same source the
+ * Reflect archive state in the bar button (always shown — the archive is free).
+ * When a past day is being viewed it flips to an active chip naming that day. Reads the URL — the same source the
  * router trusts — so it's correct after any navigation.
  */
 function syncArchiveButton() {
-  // The archive is a supporter perk, now reachable from the hub as well as from
-  // a game — on the hub it browses a past day's completion, in a game it replays.
-  const show = isSupporter();
-  archiveBtn.hidden = !show;
-  if (!show) return;
+  // The archive is free for everyone now (the site runs on a tip jar, not paid
+  // perks), reachable from the hub as well as from a game — on the hub it
+  // browses a past day's completion, in a game it replays.
+  archiveBtn.hidden = false;
 
   const day = normalizeDay(routedDay());
   archiveBtn.classList.toggle("is-active", Boolean(day));

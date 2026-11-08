@@ -43,6 +43,13 @@ const { FRAMES, CAPTIONS } = await import("../src/games/wordiamond/tutorial.js")
 // date for the persistence tests. todayKey is constant during one process.
 const TODAY = todayKey();
 const PAST = "2026-01-05";
+// A day guaranteed distinct from TODAY, for the "a different day deals a
+// different board" determinism check. Derived from TODAY (the next UTC day) so
+// it can never coincide with whatever the clock reads — a hard-coded date here
+// silently broke on the one day it happened to equal TODAY.
+const OTHER_DAY = new Date(Date.parse(`${TODAY}T00:00:00Z`) + 86_400_000)
+  .toISOString()
+  .slice(0, 10);
 
 let pass = 0, fail = 0;
 const ok = (cond, msg) => {
@@ -185,7 +192,7 @@ for (const mode of MODES) {
   // determinism
   const dealt = game.cells.join("");
   ok(fresh({ mode: mode.id }).cells.join("") === dealt, "the same day deals the same board");
-  const other = fresh({ mode: mode.id, day: "2026-08-02" });
+  const other = fresh({ mode: mode.id, day: OTHER_DAY });
   ok(other.cells.join("") !== dealt || other.puzzleIndex !== game.puzzleIndex,
     "a different day deals a different board");
 

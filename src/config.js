@@ -60,13 +60,17 @@ export const SITE_URL = "https://wordems.com";
 export const GAME_PARAM = "game";
 
 /**
- * Lemon Squeezy checkout URL for the supporter tier. Paste the product/variant
- * checkout link here once the LS product exists (Store → Products → Share).
- * Empty string hides the buy button, leaving only the "enter your key" path.
- * The test-mode and live checkout URLs differ — use the test one while building.
+ * Tip-jar link. The site is free with no paid perks; this is a plain "support
+ * the site" donation link (Ko-fi, Buy Me a Coffee, a crypto page — whatever you
+ * choose). Paste the URL here when the jar exists. Empty string means the
+ * Support dialog shows the pitch with a "coming soon" note instead of a link,
+ * so the button is never dead.
+ *
+ * Note: this replaced a Lemon Squeezy checkout. The supporter tier was dropped
+ * in favour of a donation model, so nothing here grants entitlements anymore —
+ * perks (themes, archive, sync) are free for everyone.
  */
-export const SUPPORTER_CHECKOUT_URL =
-  "https://wordems.lemonsqueezy.com/checkout/buy/c9656b0c-ab4c-4835-a6bf-f4ef341d1217?discount=0";
+export const DONATION_URL = "";
 
 /**
  * Query parameter that selects a past day to replay (the archive, a supporter

@@ -1,21 +1,23 @@
-// Cross-device history sync — a supporter perk.
+// Cross-device history sync — free for everyone.
 //
 // Ties the per-(game, date) history store (history.js) to /api/sync, keyed by
-// the player's Lemon Squeezy license key. On start it pulls the server's copy
-// and merges it in; after any local play it pushes (debounced). Push and pull
-// are the same request — POST the rows, get the full set back, merge the reply —
-// so every sync is also a pull, and the store stays a conflict-free union.
+// an anonymous device "sync code" (src/core/syncCode.js). On start it pulls the
+// server's copy and merges it in; after any local play it pushes (debounced).
+// Push and pull are the same request — POST the rows, get the full set back,
+// merge the reply — so every sync is also a pull, and the store stays a
+// conflict-free union.
 //
-// Fails soft: if sync is disabled server-side (403), the key is rejected (401),
-// or the network is down, it silently no-ops. So this is safe to run even where
-// the endpoint isn't enabled yet (e.g. production until SYNC_ENABLED is set).
+// Fails soft: if sync is disabled server-side (403), the network is down, or the
+// code is malformed, it silently no-ops.
 //
-// Identity is the stored license key; without it (or without a supporter
-// entitlement) sync never starts, so free/dev-backdoor players don't touch it.
+// Identity is the stored sync code; without one, sync never starts, so a player
+// who hasn't opted in never touches the network. Opting in (or linking another
+// device's code) sets the code and calls startSync()/restartSync() from the
+// sync UI.
 
 import { allGames } from "./registry.js";
 import { dayResults, playedDates, mergeDay, onHistoryChange } from "./history.js";
-import { isSupporter } from "./entitlements.js";
+import { getSyncCode } from "./syncCode.js";
 
 const PUSH_DEBOUNCE_MS = 1500;
 
@@ -23,25 +25,17 @@ let started = false;
 let unsub = null;
 let timer = null;
 
-function licenseKey() {
-  try {
-    return localStorage.getItem("aintaword2:license") || "";
-  } catch {
-    return "";
-  }
-}
-
-/** Begin syncing if the player is a supporter with a stored key. Idempotent. */
+/** Begin syncing if this device has opted in (holds a sync code). Idempotent. */
 export function startSync() {
   if (started) return;
-  const key = licenseKey();
-  if (!isSupporter() || !key) return;
+  const code = getSyncCode();
+  if (!code) return;
   started = true;
-  syncNow(key); // initial pull (+ push of whatever we already hold)
-  unsub = onHistoryChange(() => schedulePush(key));
+  syncNow(code); // initial pull (+ push of whatever we already hold)
+  unsub = onHistoryChange(() => schedulePush(code));
 }
 
-/** Stop syncing (e.g. supporter status removed). */
+/** Stop syncing (e.g. the player unlinked this device). */
 export function stopSync() {
   if (unsub) unsub();
   unsub = null;
@@ -50,21 +44,27 @@ export function stopSync() {
   started = false;
 }
 
-function schedulePush(key) {
+/** Restart against the current code — call after linking to a new code. */
+export function restartSync() {
+  stopSync();
+  startSync();
+}
+
+function schedulePush(code) {
   clearTimeout(timer);
-  timer = setTimeout(() => syncNow(key), PUSH_DEBOUNCE_MS);
+  timer = setTimeout(() => syncNow(code), PUSH_DEBOUNCE_MS);
 }
 
 /** One full-state round-trip: push all local rows, merge the server's reply. */
-async function syncNow(key) {
+async function syncNow(code) {
   let data;
   try {
     const res = await fetch("/api/sync", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ key, results: collectRows() }),
+      body: JSON.stringify({ device_code: code, results: collectRows() }),
     });
-    if (!res.ok) return; // disabled / unauthorised / offline — try again next change
+    if (!res.ok) return; // disabled / offline — try again next change
     data = await res.json();
   } catch {
     return;
